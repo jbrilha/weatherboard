@@ -1,0 +1,8 @@
+# Cargo build artifacts
+/target/
+**/.idea
+.DS_Store
+datasheets/
+*.md
+!README.md
+WeActStudio.EpaperModule/
