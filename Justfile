@@ -2,7 +2,7 @@ default:
     just --list
 
 flash:
-    cargo run -p firmware --target thumbv8m.main-none-eabihf
+    cd firmware && cargo run
 
 server:
     cargo run -p server
@@ -14,7 +14,7 @@ hub:
     cargo run -p hub
 
 build-firmware:
-    cargo build -p firmware --target thumbv8m.main-none-eabihf
+    cd firmware && cargo build
 
 build-server:
     cargo build -p server
