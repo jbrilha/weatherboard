@@ -1,0 +1,8 @@
+<section
+  id="weather"
+  hx-get="/fragments/weather"
+  hx-trigger="every 60s"
+  hx-swap="outerHTML"
+>
+  <p>Origin: {{ ip.origin }}</p>
+</section>
