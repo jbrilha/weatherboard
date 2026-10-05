@@ -6,8 +6,9 @@ use btleplug::api::{
     Central, CentralEvent, Manager as _, Peripheral, ScanFilter, bleuuid::BleUuid,
 };
 use btleplug::platform::{Adapter, Manager};
-use common::{display_service_uuid, weather_payload_uuid};
+use common::{MAX_PAYLOAD_LEN, Payload, display_service_uuid, weather_payload_uuid};
 use futures::stream::StreamExt;
+use std::time::Duration;
 
 async fn get_central(manager: &Manager) -> Adapter {
     let adapters = manager.adapters().await.unwrap();
@@ -59,9 +60,19 @@ async fn main() -> anyhow::Result<()> {
                     .into_iter()
                     .find(|c| c.uuid == weather_payload_uuid())
                     .ok_or(anyhow::anyhow!("payload characteristic not found"))?;
-                peripheral
-                    .write(&ch, &[1, 2, 3], WriteType::WithResponse)
-                    .await?;
+
+                let mut buf = [0u8; MAX_PAYLOAD_LEN];
+                for counter in 0..5 {
+                    let bytes = Payload::new(counter).encode(&mut buf)?;
+                    peripheral
+                        .write(&ch, bytes, WriteType::WithResponse)
+                        .await?;
+                    println!("Sent counter {counter} ({} bytes)", bytes.len());
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                }
+
+                peripheral.disconnect().await?;
+                return Ok(());
             }
             CentralEvent::StateUpdate(state) => {
                 println!("AdapterStatusUpdate {:?}", state);

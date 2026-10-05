@@ -1,6 +1,7 @@
 // embassy stm32wba65 ble_gatt_server example
 
-use defmt::{Display2Format, debug, error, info};
+use common::Payload;
+use defmt::{Display2Format, debug, error, info, warn};
 use embassy_executor::Spawner;
 use embassy_stm32_wpan::bluetooth::gap::types::OwnAddressType;
 use embassy_stm32_wpan::bluetooth::gap::{AdvData, AdvParams, AdvType, GapEvent};
@@ -196,7 +197,14 @@ async fn ble_task(mut ble: HCI<'static, Normal>) {
                 }
                 // Check if this is a characteristic value write
                 else if is_value_handle(state.data_char_handle.0, attribute.attr_handle.0) {
-                    info!("Characteristic value written: {:?}", attribute.data());
+                    match Payload::decode(attribute.data()) {
+                        Ok(payload) => info!("Payload received: {}", payload),
+                        Err(e) => warn!(
+                            "Payload rejected: {} (raw {:?})",
+                            e,
+                            attribute.data()
+                        ),
+                    }
 
                     // Echo the data back as a notification if enabled
                     if state.notifications_enabled {
