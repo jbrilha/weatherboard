@@ -25,11 +25,6 @@ async fn ble_runner_task(platform: &'static Platform) {
     platform.run_ble().await
 }
 
-/// Custom service UUID (use your own for production)
-const CUSTOM_SERVICE_UUID: u16 = 0xABCD;
-/// Read/Write/Notify characteristic UUID
-const DATA_CHAR_UUID: u16 = 0xABCE;
-
 /// Application state for tracking GATT handles and CCCD state
 struct AppState {
     service_handle: ServiceHandle,
@@ -37,6 +32,10 @@ struct AppState {
     notifications_enabled: bool,
     current_conn_handle: Option<u16>,
     counter: u8,
+}
+
+fn to_ble_uuid(uuid: common::Uuid) -> Uuid {
+    Uuid::from_u128_le(uuid.as_u128().to_le_bytes())
 }
 
 pub async fn start(spawner: Spawner) {
@@ -67,14 +66,14 @@ async fn ble_task(mut ble: HCI<'static, Normal>) {
     let mut gatt = ble.gatt_server();
 
     // Create custom service
-    let service_uuid = Uuid::from_u16(CUSTOM_SERVICE_UUID);
+    let service_uuid = to_ble_uuid(common::display_service_uuid());
     let service_handle = gatt
         .add_service(service_uuid, ServiceType::Primary, 6)
         .expect("Failed to add service");
     info!("Service created: handle 0x{:04X}", service_handle.0);
 
     // Add data characteristic with read/write/notify
-    let char_uuid = Uuid::from_u16(DATA_CHAR_UUID);
+    let char_uuid = to_ble_uuid(common::weather_payload_uuid());
     let char_properties = CharProperties::READ | CharProperties::WRITE | CharProperties::NOTIFY;
     let data_char_handle = gatt
         .add_characteristic(
@@ -115,11 +114,9 @@ async fn ble_task(mut ble: HCI<'static, Normal>) {
     // Create advertising data
     let mut adv_data = AdvData::new();
     adv_data.add_flags(0x06).expect("Failed to add flags");
+    adv_data.add_name("wboard").expect("Failed to add name");
     adv_data
-        .add_name("Embassy-GATT")
-        .expect("Failed to add name");
-    adv_data
-        .add_service_uuid_16(CUSTOM_SERVICE_UUID)
+        .add_service_uuid_128(&common::display_service_uuid().as_u128().to_le_bytes())
         .expect("Failed to add service UUID");
 
     let adv_params = AdvParams {

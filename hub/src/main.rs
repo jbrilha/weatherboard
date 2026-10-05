@@ -1,10 +1,12 @@
 // See the "macOS permissions note" in README.md before running this on macOS
 // Big Sur or later.
 
+use btleplug::api::WriteType;
 use btleplug::api::{
     Central, CentralEvent, Manager as _, Peripheral, ScanFilter, bleuuid::BleUuid,
 };
 use btleplug::platform::{Adapter, Manager};
+use common::{display_service_uuid, weather_payload_uuid};
 use futures::stream::StreamExt;
 
 async fn get_central(manager: &Manager) -> Adapter {
@@ -31,7 +33,11 @@ async fn main() -> anyhow::Result<()> {
     let mut events = central.events().await?;
 
     // start scanning for devices
-    central.start_scan(ScanFilter::default()).await?;
+    central
+        .start_scan(ScanFilter {
+            services: vec![display_service_uuid()],
+        })
+        .await?;
 
     // Process events asynchronously. In a real program, run this loop in its own
     // Tokio task if event handling should proceed independently of other work.
@@ -42,39 +48,47 @@ async fn main() -> anyhow::Result<()> {
                 let properties = peripheral.properties().await?;
                 let name = properties
                     .and_then(|p| p.local_name)
-                    .filter(|unfiltered_name| unfiltered_name.contains("iPhone"))
                     .map(|local_name| format!("Name: {local_name}"))
                     .unwrap_or_default();
-                if !name.eq("") {
-                    println!("DeviceDiscovered: {:?} {}", id, name);
-                }
+                println!("DeviceDiscovered: {:?} {}", id, name);
+
+                peripheral.connect().await?;
+                peripheral.discover_services().await?;
+                let ch = peripheral
+                    .characteristics()
+                    .into_iter()
+                    .find(|c| c.uuid == weather_payload_uuid())
+                    .ok_or(anyhow::anyhow!("payload characteristic not found"))?;
+                peripheral
+                    .write(&ch, &[1, 2, 3], WriteType::WithResponse)
+                    .await?;
             }
-            // CentralEvent::StateUpdate(state) => {
-            //     println!("AdapterStatusUpdate {:?}", state);
-            // }
-            // CentralEvent::DeviceConnected(id) => {
-            //     println!("DeviceConnected: {:?}", id);
-            // }
-            // CentralEvent::DeviceDisconnected(id) => {
-            //     println!("DeviceDisconnected: {:?}", id);
-            // }
-            // CentralEvent::ManufacturerDataAdvertisement {
-            //     id,
-            //     manufacturer_data,
-            // } => {
-            //     println!(
-            //         "ManufacturerDataAdvertisement: {:?}, {:?}",
-            //         id, manufacturer_data
-            //     );
-            // }
-            // CentralEvent::ServiceDataAdvertisement { id, service_data } => {
-            //     println!("ServiceDataAdvertisement: {:?}, {:?}", id, service_data);
-            // }
-            // CentralEvent::ServicesAdvertisement { id, services } => {
-            //     let services: Vec<String> =
-            //         services.into_iter().map(|s| s.to_short_string()).collect();
-            //     println!("ServicesAdvertisement: {:?}, {:?}", id, services);
-            // }
+            CentralEvent::StateUpdate(state) => {
+                println!("AdapterStatusUpdate {:?}", state);
+            }
+            CentralEvent::DeviceConnected(id) => {
+                println!("DeviceConnected: {:?}", id);
+            }
+            CentralEvent::DeviceDisconnected(id) => {
+                println!("DeviceDisconnected: {:?}", id);
+            }
+            CentralEvent::ManufacturerDataAdvertisement {
+                id,
+                manufacturer_data,
+            } => {
+                println!(
+                    "ManufacturerDataAdvertisement: {:?}, {:?}",
+                    id, manufacturer_data
+                );
+            }
+            CentralEvent::ServiceDataAdvertisement { id, service_data } => {
+                println!("ServiceDataAdvertisement: {:?}, {:?}", id, service_data);
+            }
+            CentralEvent::ServicesAdvertisement { id, services } => {
+                let services: Vec<String> =
+                    services.into_iter().map(|s| s.to_short_string()).collect();
+                println!("ServicesAdvertisement: {:?}, {:?}", id, services);
+            }
             _ => {}
         }
     }

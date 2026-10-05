@@ -11,6 +11,7 @@ exclude = ["firmware"]
 common = { path = "common" }
 serde = { version = "1.0.229", default-features = false, features = ["derive"] }
 serde_json = "1.0.151"
+uuid = { version = "1.26", default-features = false, features = ["v5"] }
 tokio = { version = "1.53.2", features = ["full"] }
 anyhow = "1.0.104"
 reqwest = "0.13.5"
