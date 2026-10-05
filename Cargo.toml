@@ -3,8 +3,15 @@ resolver = "3"
 members = [
     "backend",
     "firmware",
-    "common"
+    "common",
+    "hub",
 ]
+
+[workspace.dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+tokio = { version = "1.53.2", features = ["full"] }
+anyhow = "1.0.104"
+reqwest = "0.13.5"
 
 [profile.release]
 debug = 2
