@@ -3,6 +3,8 @@
 use common::Payload;
 use defmt::{Display2Format, debug, error, info, warn};
 use embassy_executor::Spawner;
+use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
+use embassy_sync::signal::Signal;
 use embassy_stm32_wpan::bluetooth::gap::types::OwnAddressType;
 use embassy_stm32_wpan::bluetooth::gap::{AdvData, AdvParams, AdvType, GapEvent};
 use embassy_stm32_wpan::bluetooth::gap_init::{AddressType, GapInitParams};
@@ -19,6 +21,8 @@ use crate::board::Irqs;
 
 // ---- Test configuration ----
 const ADDR_TYPE: OwnAddressType = OwnAddressType::Random;
+
+pub static PAYLOAD: Signal<CriticalSectionRawMutex, Payload> = Signal::new();
 
 /// BLE runner task - drives the BLE stack sequencer
 #[embassy_executor::task]
@@ -198,7 +202,10 @@ async fn ble_task(mut ble: HCI<'static, Normal>) {
                 // Check if this is a characteristic value write
                 else if is_value_handle(state.data_char_handle.0, attribute.attr_handle.0) {
                     match Payload::decode(attribute.data()) {
-                        Ok(payload) => info!("Payload received: {}", payload),
+                        Ok(payload) => {
+                            info!("Payload received: {}", payload);
+                            PAYLOAD.signal(payload);
+                        }
                         Err(e) => warn!(
                             "Payload rejected: {} (raw {:?})",
                             e,

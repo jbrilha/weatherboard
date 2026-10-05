@@ -68,7 +68,7 @@ async fn main() -> anyhow::Result<()> {
                         .write(&ch, bytes, WriteType::WithResponse)
                         .await?;
                     println!("Sent counter {counter} ({} bytes)", bytes.len());
-                    tokio::time::sleep(Duration::from_secs(1)).await;
+                    tokio::time::sleep(Duration::from_secs(15)).await;
                 }
 
                 peripheral.disconnect().await?;

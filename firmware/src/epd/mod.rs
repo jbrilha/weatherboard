@@ -1,5 +1,8 @@
+use common::Payload;
+use core::fmt::Write;
 use defmt::{Format, error, info};
 use display_interface_spi::SPIInterface;
+use embassy_futures::select::{Either, select};
 use embassy_stm32::{
     exti::ExtiInput,
     gpio::{Level, Output, Pull, Speed},
@@ -16,8 +19,10 @@ use embedded_graphics::{
     text::Text,
 };
 use embedded_hal_bus::spi::ExclusiveDevice;
+use heapless::String;
 use weact_studio_epd::{TriColor, WeActStudio420TriColorDriver, graphics::Display420TriColor};
 
+use crate::ble::PAYLOAD;
 pub use crate::board::EpdPeripherals;
 use crate::board::Irqs;
 use crate::spi_utils::SpiDev;
@@ -61,7 +66,7 @@ impl Epd {
         Epd {
             driver,
             display: Display420TriColor::new(),
-            refresh: Refresh::Full,
+            refresh: Refresh::FastFull,
         }
     }
     pub async fn init(&mut self) -> weact_studio_epd::Result<()> {
@@ -109,6 +114,47 @@ pub async fn epd_task(mut epd: Epd) {
         epd.flush().await.unwrap();
         epd.sleep().await.unwrap();
         Timer::after_secs(15 * 60).await;
+        epd.wake_up().await.unwrap();
+    }
+}
+
+#[embassy_executor::task]
+pub async fn epd_ble_task(mut epd: Epd) {
+    if epd.init().await.is_err() {
+        error!("failed to init epd");
+        return;
+    }
+    info!("epd ready");
+    let style = MonoTextStyle::new(&FONT_10X20, TriColor::Black);
+    let mut current: Option<Payload> = None;
+    loop {
+        let mut counter: String<16> = String::new();
+        let mut version: String<16> = String::new();
+        match current {
+            Some(payload) => {
+                write!(counter, "counter: {}", payload.counter).unwrap();
+                write!(version, "version: {}", payload.version).unwrap();
+            }
+            None => {
+                write!(counter, "waiting for hub").unwrap();
+                write!(version, "waiting for hub").unwrap();
+            }
+        }
+
+        let d = epd.display();
+        d.clear(TriColor::White);
+        Text::new(&counter, Point::new(10, 30), style)
+            .draw(d)
+            .unwrap();
+        Text::new(&version, Point::new(10, 50), style)
+            .draw(d)
+            .unwrap();
+        epd.flush().await.unwrap();
+        epd.sleep().await.unwrap();
+
+        if let Either::First(payload) = select(PAYLOAD.wait(), Timer::after_secs(15 * 60)).await {
+            current = Some(payload);
+        }
         epd.wake_up().await.unwrap();
     }
 }

@@ -14,7 +14,7 @@ use embassy_executor::Spawner;
 
 use crate::{
     board::Board,
-    epd::{Epd, epd_task},
+    epd::{Epd, epd_ble_task},
     imu::{Imu, imu_task},
 };
 
@@ -31,5 +31,5 @@ async fn main(spawner: Spawner) {
     spawner.spawn(imu_task(imu).unwrap());
 
     let epd = Epd::new(b.epd);
-    spawner.spawn(epd_task(epd).unwrap());
+    spawner.spawn(epd_ble_task(epd).unwrap());
 }

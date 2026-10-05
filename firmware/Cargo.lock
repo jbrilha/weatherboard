@@ -889,6 +889,7 @@ dependencies = [
  "display-interface-spi",
  "embassy-embedded-hal",
  "embassy-executor",
+ "embassy-futures",
  "embassy-ssd1306",
  "embassy-stm32",
  "embassy-stm32-wpan",
