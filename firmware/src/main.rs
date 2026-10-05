@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 mod board;
+pub mod epd;
 pub mod imu;
 pub mod spi_utils;
 pub mod state_machine;
@@ -12,6 +13,7 @@ use embassy_executor::Spawner;
 
 use crate::{
     board::Board,
+    epd::{Epd, epd_task},
     imu::{Imu, imu_task},
 };
 
@@ -24,4 +26,7 @@ async fn main(spawner: Spawner) {
 
     let imu = Imu::new(b.imu);
     spawner.spawn(imu_task(imu).unwrap());
+
+    let epd = Epd::new(b.epd);
+    spawner.spawn(epd_task(epd).unwrap());
 }
