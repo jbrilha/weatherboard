@@ -7,7 +7,7 @@ edition = "2024"
 axum = "0.8.9"
 common.workspace = true
 jiff.workspace = true
-reqwest = { workspace = true, features = ["json"] }
+reqwest.workspace = true
 serde = { workspace = true, features = ["std"] }
 serde_json.workspace = true
 tokio.workspace = true
