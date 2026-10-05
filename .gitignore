@@ -2,6 +2,7 @@
 /target/
 **/.idea
 .DS_Store
+.env
 datasheets/
 *.md
 !README.md
