@@ -7,6 +7,9 @@ flash:
 server:
     cargo run -p server
 
+dev:
+    watchexec --restart --watch server --watch common --exts rs,toml,html,css -- cargo run -p server --features livereload
+
 hub:
     cargo run -p hub
 

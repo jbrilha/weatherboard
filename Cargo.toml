@@ -25,5 +25,9 @@ opt-level = 'z'
 
 [profile.dev]
 debug = 2
-lto = true
+
+[profile.dev.package.firmware]
+opt-level = "z"
+
+[profile.dev.package."*"]
 opt-level = "z"
