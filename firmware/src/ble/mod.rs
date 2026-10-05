@@ -21,6 +21,8 @@ use crate::board::Irqs;
 
 // ---- Test configuration ----
 const ADDR_TYPE: OwnAddressType = OwnAddressType::Random;
+const TX_POWER: u8 = 30;
+const DEVICE_NAME: &str = "wboard";
 
 pub static PAYLOAD: Signal<CriticalSectionRawMutex, Payload> = Signal::new();
 
@@ -54,11 +56,23 @@ pub async fn start(spawner: Spawner) {
             let gap_params = GapInitParams {
                 bd_addr: [0x01, 0x00, 0x00, 0xE1, 0x80, 0x00],
                 address_type: AddressType::Public,
+                tx_power: TX_POWER,
+                device_name: DEVICE_NAME.as_bytes(),
                 ..GapInitParams::default()
             };
             HCI::new_with_gap_params(platform, runtime, Irqs, gap_params).await
         }
-        _ => HCI::new(platform, runtime, Irqs).await,
+        _ => {
+            let mut gap_params = GapInitParams {
+                tx_power: TX_POWER,
+                device_name: DEVICE_NAME.as_bytes(),
+                ..GapInitParams::default()
+            };
+            gap_params
+                .bd_addr
+                .copy_from_slice(&embassy_stm32::uid::uid()[0..6]);
+            HCI::new_with_gap_params(platform, runtime, Irqs, gap_params).await
+        }
     }
     .expect("BLE initialization failed");
 
@@ -119,7 +133,7 @@ async fn ble_task(mut ble: HCI<'static, Normal>) {
     // Create advertising data
     let mut adv_data = AdvData::new();
     adv_data.add_flags(0x06).expect("Failed to add flags");
-    adv_data.add_name("wboard").expect("Failed to add name");
+    adv_data.add_name(DEVICE_NAME).expect("Failed to add name");
     adv_data
         .add_service_uuid_128(&common::display_service_uuid().as_u128().to_le_bytes())
         .expect("Failed to add service UUID");
@@ -139,7 +153,7 @@ async fn ble_task(mut ble: HCI<'static, Normal>) {
             .expect("Failed to start advertising");
     }
 
-    info!("GATT Server started as 'Embassy-GATT'");
+    info!("GATT Server started as '{}'", DEVICE_NAME);
     info!("Waiting for connections...");
 
     // Main event loop
