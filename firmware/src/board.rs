@@ -68,6 +68,7 @@ board! {
 
 pub fn clock_config() -> Config {
     let mut config = Config::default();
-    config.rcc.mux.sai1sel = embassy_stm32::rcc::mux::Sai1sel::HSI;
+    config.rcc = embassy_stm32::rcc::Config::new_wpan();
+    config.rcc.mux.sai1sel = embassy_stm32::rcc::mux::Sai1sel::Hsi;
     config
 }

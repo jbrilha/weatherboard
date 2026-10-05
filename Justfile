@@ -14,7 +14,7 @@ hub:
     cargo run -p hub
 
 build-firmware:
-    cargo build -p firmware
+    cargo build -p firmware --target thumbv8m.main-none-eabihf
 
 build-server:
     cargo build -p server
