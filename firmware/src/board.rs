@@ -1,4 +1,5 @@
 use embassy_stm32::{Config, Peri, bind_interrupts, dma, exti, i2c, interrupt, peripherals};
+use embassy_stm32_wpan::{HighInterruptHandler, LowInterruptHandler};
 
 bind_interrupts!(pub struct Irqs {
     I2C1_EV => i2c::EventInterruptHandler<peripherals::I2C1>;
@@ -8,6 +9,8 @@ bind_interrupts!(pub struct Irqs {
     GPDMA1_CHANNEL2 => dma::InterruptHandler<peripherals::GPDMA1_CH2>;
     EXTI11 => exti::InterruptHandler<interrupt::typelevel::EXTI11>;
     EXTI12 => exti::InterruptHandler<interrupt::typelevel::EXTI12>;
+    RADIO => HighInterruptHandler;
+    HASH => LowInterruptHandler;
 });
 
 macro_rules! board {

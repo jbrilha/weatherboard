@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+pub mod ble;
 mod board;
 pub mod epd;
 pub mod imu;
@@ -23,6 +24,8 @@ use {defmt_rtt as _, panic_probe as _};
 async fn main(spawner: Spawner) {
     let b = Board::init();
     info!("init done");
+
+    ble::start(spawner).await;
 
     let imu = Imu::new(b.imu);
     spawner.spawn(imu_task(imu).unwrap());
