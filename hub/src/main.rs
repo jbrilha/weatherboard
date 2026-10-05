@@ -53,7 +53,9 @@ async fn main() -> anyhow::Result<()> {
                     .unwrap_or_default();
                 println!("DeviceDiscovered: {:?} {}", id, name);
 
+                central.stop_scan().await?;
                 peripheral.connect().await?;
+                println!("Connected");
                 peripheral.discover_services().await?;
                 let ch = peripheral
                     .characteristics()
