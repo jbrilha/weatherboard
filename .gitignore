@@ -1,6 +1,7 @@
 # Cargo build artifacts
 target/
 **/.idea
+
 .DS_Store
 .env
 datasheets/
