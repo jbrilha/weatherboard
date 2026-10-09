@@ -1,5 +1,8 @@
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
 runner = "probe-rs run --chip STM32WBA65CI --no-catch-reset"
 
+[target.aarch64-apple-darwin]
+rustflags = ["-L", "/opt/homebrew/lib"]
+
 [env]
 DEFMT_LOG = "info"

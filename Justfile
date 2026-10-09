@@ -4,6 +4,9 @@ default:
 flash:
     cd firmware && cargo run
 
+sim:
+    cargo run -p sim
+
 server:
     cargo run -p server
 

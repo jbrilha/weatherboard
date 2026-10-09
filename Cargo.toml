@@ -5,6 +5,7 @@ members = [
     "common",
     "hub",
     "ui",
+    "sim",
 ]
 exclude = ["firmware"]
 
