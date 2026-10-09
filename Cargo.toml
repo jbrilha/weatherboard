@@ -4,11 +4,13 @@ members = [
     "server",
     "common",
     "hub",
+    "ui",
 ]
 exclude = ["firmware"]
 
 [workspace.dependencies]
 common = { path = "common" }
+ui = { path = "ui" }
 serde = { version = "1.0.229", default-features = false, features = ["derive"] }
 serde_json = "1.0.151"
 uuid = { version = "1.26", default-features = false, features = ["v5"] }

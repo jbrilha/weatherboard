@@ -240,7 +240,7 @@ const TEMP_OFFSET_C: f32 = 21.0;
 const ACCEL_BIAS: Vec3<i32> = Vec3::new(989, 253, -1142);
 
 const CALIBRATION_SAMPLES: u16 = 500;
-const LOG_EVERY: u32 = 200;
+const LOG_EVERY: u32 = 2000;
 
 #[embassy_executor::task]
 pub async fn imu_task(mut imu: Imu) {

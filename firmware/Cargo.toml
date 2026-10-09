@@ -14,6 +14,7 @@ bench = false
 
 [dependencies]
 common = { path = "../common", features = ["defmt"] }
+ui = { path = "../ui" }
 defmt = "1.1"
 defmt-rtt = "1.2"
 panic-probe = { version = "1.0", features = ["print-defmt"] }
