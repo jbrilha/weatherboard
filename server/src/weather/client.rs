@@ -31,7 +31,6 @@ impl WeatherClient {
 
     pub async fn fetch(&self, req: &WeatherRequest) -> anyhow::Result<Forecast> {
         let url = Url::parse(ONE_CALL_API)?.join(req.endpoint.path())?;
-        println!("url: {:?}", url.as_str());
 
         let response = self
             .client
@@ -43,8 +42,6 @@ impl WeatherClient {
             .error_for_status()?
             .json::<Forecast>()
             .await?;
-
-        println!("{:?}", response.lat);
 
         Ok(response)
     }

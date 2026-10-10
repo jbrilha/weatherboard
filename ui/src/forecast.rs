@@ -5,7 +5,7 @@ use heapless::String;
 use crate::{day::Day, weather_icon::WeatherIcon};
 
 pub struct Forecast {
-    pub day: Day,
+    pub week_day: Day,
     pub icon: WeatherIcon,
     pub low_temp: i8,
     pub high_temp: i8,
@@ -13,12 +13,12 @@ pub struct Forecast {
 }
 
 impl Forecast {
-    pub fn new(day: Day, icon: WeatherIcon, low_temp: i8, high_temp: i8) -> Self {
+    pub fn new(week_day: Day, icon: WeatherIcon, low_temp: i8, high_temp: i8) -> Self {
         let mut temp_txt = String::new();
-        write!(temp_txt, "{low_temp}|{high_temp}").unwrap();
+        write!(temp_txt, "{low_temp}/{high_temp}").unwrap();
 
         Self {
-            day,
+            week_day,
             icon,
             low_temp,
             high_temp,
