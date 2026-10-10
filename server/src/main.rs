@@ -4,12 +4,17 @@ mod web;
 use std::sync::Arc;
 
 use tower_http::trace::TraceLayer;
+use tracing_subscriber::EnvFilter;
 
 use weather::{WeatherRequest, client::WeatherClient, service::WeatherService};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug")),
+        )
+        .init();
 
     let weather = Arc::new(WeatherService::default());
     tokio::spawn(weather.clone().run());

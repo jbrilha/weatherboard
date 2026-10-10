@@ -12,7 +12,8 @@ pub struct Ip {
     pub origin: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct Temperature {
     day: f32,
     min: f32,
@@ -22,7 +23,8 @@ pub struct Temperature {
     morn: f32,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct FeelsLike {
     day: f32,
     night: f32,
@@ -30,7 +32,8 @@ pub struct FeelsLike {
     morn: f32,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct Weather {
     id: i32,
     main: String,
@@ -38,14 +41,15 @@ pub struct Weather {
     icon: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct DailyForecast {
     dt: i32,
     sunrise: i32,
     sunset: i32,
     moonrise: i32,
     moonset: i32,
-    moon_phase: i32,
+    moon_phase: f32,
     temp: Temperature,
     feels_like: FeelsLike,
     pressure: f32,
@@ -62,13 +66,20 @@ pub struct DailyForecast {
     rain: Option<f32>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct Forecast {
     pub lat: f32,
     pub lon: f32,
     pub timezone: String,
     pub timezone_offset: i32,
     pub data: Vec<DailyForecast>,
+}
+
+impl Forecast {
+    pub fn pretty_json(&self) -> String {
+        serde_json::to_string_pretty(self).unwrap_or_default()
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]

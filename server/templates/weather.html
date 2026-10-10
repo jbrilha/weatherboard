@@ -5,8 +5,5 @@
   hx-swap="outerHTML"
 >
   <p>Origin: {{ ip.origin }}</p>
-  <p>Lat: {{ forecast.lat }}</p>
-  <p>Lon: {{ forecast.lon }}</p>
-  <p>Timezone: {{ forecast.timezone }}</p>
-  <p>TZ Offset: {{ forecast.timezone_offset }}</p>
+  <pre>{{ forecast.pretty_json() }}</pre>
 </section>
