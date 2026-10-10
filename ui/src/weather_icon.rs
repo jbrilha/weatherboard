@@ -7,8 +7,6 @@ use embedded_graphics::{
 use embedded_iconoir::{Icon, size48px::weather};
 use weact_studio_epd::TriColor;
 
-use crate::day::Day;
-
 pub enum WeatherIcon {
     Sunny(Icon<TriColor, weather::SunLight>),
     PartlyCloudy(Icon<TriColor, weather::CloudSunny>),

@@ -1,7 +1,7 @@
 use reqwest::Url;
 use tracing::info;
 
-use super::{ONE_CALL_API, WeatherInfo, WeatherRequest};
+use super::{Forecast, ONE_CALL_API, WeatherRequest};
 
 pub struct WeatherClient {
     pub client: reqwest::Client,
@@ -21,7 +21,7 @@ impl WeatherClient {
         Self { client, api_key }
     }
 
-    pub async fn fetch(&self, req: &WeatherRequest) -> anyhow::Result<WeatherInfo> {
+    pub async fn fetch(&self, req: &WeatherRequest) -> anyhow::Result<Forecast> {
         let base = Url::parse(ONE_CALL_API)?.join("timeline/1day")?;
         let params = [
             ("lat", req.lat.to_string()),
@@ -36,7 +36,7 @@ impl WeatherClient {
             .send()
             .await?
             .error_for_status()?
-            .json::<WeatherInfo>()
+            .json::<Forecast>()
             .await?;
 
         println!("{:?}", response.lat);

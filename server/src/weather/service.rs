@@ -2,14 +2,14 @@ use std::{sync::Arc, time::Duration};
 
 use tokio::sync::watch;
 
-use super::{WeatherInfo, WeatherRequest, client::WeatherClient};
+use super::{Forecast, WeatherRequest, client::WeatherClient};
 
 const REFRESH_INTERVAL: Duration = Duration::from_mins(15);
 
 pub struct WeatherService {
     client: WeatherClient,
     request: WeatherRequest,
-    latest: watch::Sender<Option<Arc<WeatherInfo>>>,
+    latest: watch::Sender<Option<Arc<Forecast>>>,
 }
 
 impl WeatherService {
@@ -28,7 +28,7 @@ impl WeatherService {
         WeatherService::new(client, request)
     }
 
-    pub fn latest(&self) -> Option<Arc<WeatherInfo>> {
+    pub fn latest(&self) -> Option<Arc<Forecast>> {
         self.latest.borrow().clone()
     }
 

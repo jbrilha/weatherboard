@@ -13,11 +13,62 @@ pub struct Ip {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct WeatherInfo {
+pub struct Temperature {
+    day: f32,
+    min: f32,
+    max: f32,
+    night: f32,
+    eve: f32,
+    morn: f32,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct FeelsLike {
+    day: f32,
+    night: f32,
+    eve: f32,
+    morn: f32,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Weather {
+    id: i32,
+    main: String,
+    description: String,
+    icon: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DailyForecast {
+    dt: i32,
+    sunrise: i32,
+    sunset: i32,
+    moonrise: i32,
+    moonset: i32,
+    moon_phase: i32,
+    temp: Temperature,
+    feels_like: FeelsLike,
+    pressure: f32,
+    humidity: i32,
+    dew_point: f32,
+    wind_speed: f32,
+    wind_deg: i32,
+    weather: Vec<Weather>,
+    clouds: i32,
+    pop: f32,
+    #[serde(default)]
+    uvi: Option<f32>,
+    #[serde(default)]
+    rain: Option<f32>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Forecast {
     pub lat: f32,
     pub lon: f32,
     pub timezone: String,
     pub timezone_offset: i32,
+    pub data: Vec<DailyForecast>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -42,11 +93,7 @@ impl WeatherRequest {
     }
 
     pub fn lisbon() -> Self {
-        Self {
-            lat: 38.7369,
-            lon: -9.142685,
-            units: Some(Metric),
-        }
+        WeatherRequest::new(38.7369, -9.142685, Some(Metric))
     }
 }
 

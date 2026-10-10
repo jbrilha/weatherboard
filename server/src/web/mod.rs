@@ -1,16 +1,10 @@
 use std::sync::Arc;
 
 use askama::Template;
-use axum::{
-    Json, Router,
-    extract::State,
-    http::StatusCode,
-    response::Html,
-    routing::get,
-};
+use axum::{Json, Router, extract::State, http::StatusCode, response::Html, routing::get};
 use tower_http::services::ServeDir;
 
-use crate::weather::{self, Ip, WeatherInfo, service::WeatherService};
+use crate::weather::{self, Forecast, Ip, service::WeatherService};
 
 type WebResult<T> = Result<T, (StatusCode, String)>;
 
@@ -18,14 +12,14 @@ type WebResult<T> = Result<T, (StatusCode, String)>;
 #[template(path = "index.html")]
 struct IndexTemplate {
     ip: Ip,
-    weather_info: Arc<WeatherInfo>,
+    forecast: Arc<Forecast>,
 }
 
 #[derive(Template)]
 #[template(path = "weather.html")]
 struct WeatherTemplate {
     ip: Ip,
-    weather_info: Arc<WeatherInfo>,
+    forecast: Arc<Forecast>,
 }
 
 pub fn router() -> Router<Arc<WeatherService>> {
@@ -50,7 +44,7 @@ fn bad_gateway(err: anyhow::Error) -> (StatusCode, String) {
     (StatusCode::BAD_GATEWAY, err.to_string())
 }
 
-fn latest(weather: &WeatherService) -> WebResult<Arc<WeatherInfo>> {
+fn latest(weather: &WeatherService) -> WebResult<Arc<Forecast>> {
     weather.latest().ok_or((
         StatusCode::SERVICE_UNAVAILABLE,
         "weather not available yet".to_string(),
@@ -59,14 +53,14 @@ fn latest(weather: &WeatherService) -> WebResult<Arc<WeatherInfo>> {
 
 async fn index(State(weather): State<Arc<WeatherService>>) -> WebResult<Html<String>> {
     let ip = weather::weather_test().await.map_err(bad_gateway)?;
-    let weather_info = latest(&weather)?;
-    render(IndexTemplate { ip, weather_info })
+    let forecast = latest(&weather)?;
+    render(IndexTemplate { ip, forecast })
 }
 
 async fn weather_fragment(State(weather): State<Arc<WeatherService>>) -> WebResult<Html<String>> {
     let ip = weather::weather_test().await.map_err(bad_gateway)?;
-    let weather_info = latest(&weather)?;
-    render(WeatherTemplate { ip, weather_info })
+    let forecast = latest(&weather)?;
+    render(WeatherTemplate { ip, forecast })
 }
 
 async fn weather_json() -> WebResult<Json<Ip>> {
