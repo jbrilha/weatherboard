@@ -38,10 +38,13 @@ impl WeatherClient {
             .query(&req.params)
             .query(&[("appid", self.api_key.clone())])
             .send()
-            .await?
-            .error_for_status()?
+            .await
+            .map_err(reqwest::Error::without_url)?
+            .error_for_status()
+            .map_err(reqwest::Error::without_url)?
             .json::<Forecast>()
-            .await?;
+            .await
+            .map_err(reqwest::Error::without_url)?;
 
         Ok(response)
     }

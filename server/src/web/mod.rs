@@ -45,10 +45,15 @@ fn bad_gateway(err: anyhow::Error) -> (StatusCode, String) {
 }
 
 fn latest(weather: &WeatherService) -> WebResult<Arc<Forecast>> {
-    weather.latest().ok_or((
-        StatusCode::SERVICE_UNAVAILABLE,
-        "weather not available yet".to_string(),
-    ))
+    weather.latest().ok_or_else(|| {
+        let reason = weather
+            .last_error()
+            .unwrap_or_else(|| "first fetch in progress".to_string());
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            format!("weather not available yet: {reason}"),
+        )
+    })
 }
 
 async fn index(State(weather): State<Arc<WeatherService>>) -> WebResult<Html<String>> {
