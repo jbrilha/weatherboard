@@ -2,7 +2,13 @@ use std::{sync::Arc, time::Duration};
 
 use tokio::sync::watch;
 
-use super::{Forecast, WeatherRequest, client::WeatherClient};
+use crate::weather::{
+    WeatherParams,
+    locations::Location,
+    openweathermap::{Forecast, OpenCallEndpoint, Units},
+};
+
+use super::{WeatherRequest, client::WeatherClient};
 
 const REFRESH_INTERVAL: Duration = Duration::from_mins(15);
 
@@ -24,7 +30,10 @@ impl WeatherService {
 
     pub fn default() -> Self {
         let client = WeatherClient::new();
-        let request = WeatherRequest::lisbon();
+        let request = WeatherRequest::new(
+            OpenCallEndpoint::Timeline1Day,
+            WeatherParams::at(Location::Lisbon, Units::Metric),
+        );
         WeatherService::new(client, request)
     }
 

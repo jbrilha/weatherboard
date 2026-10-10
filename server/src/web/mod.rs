@@ -4,7 +4,7 @@ use askama::Template;
 use axum::{Json, Router, extract::State, http::StatusCode, response::Html, routing::get};
 use tower_http::services::ServeDir;
 
-use crate::weather::{self, Forecast, Ip, service::WeatherService};
+use crate::weather::{self, Ip, openweathermap::Forecast, service::WeatherService};
 
 type WebResult<T> = Result<T, (StatusCode, String)>;
 
