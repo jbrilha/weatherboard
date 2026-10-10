@@ -4,7 +4,7 @@ use tokio::sync::watch;
 
 use super::{WeatherInfo, WeatherRequest, client::WeatherClient};
 
-const REFRESH_INTERVAL: Duration = Duration::from_secs(15 * 60);
+const REFRESH_INTERVAL: Duration = Duration::from_mins(15);
 
 pub struct WeatherService {
     client: WeatherClient,
@@ -20,6 +20,12 @@ impl WeatherService {
             request,
             latest,
         }
+    }
+
+    pub fn default() -> Self {
+        let client = WeatherClient::new();
+        let request = WeatherRequest::lisbon();
+        WeatherService::new(client, request)
     }
 
     pub fn latest(&self) -> Option<Arc<WeatherInfo>> {

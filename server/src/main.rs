@@ -11,10 +11,7 @@ use weather::{WeatherRequest, client::WeatherClient, service::WeatherService};
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
-    let weather = Arc::new(WeatherService::new(
-        WeatherClient::new(),
-        WeatherRequest::lisbon(),
-    ));
+    let weather = Arc::new(WeatherService::default());
     tokio::spawn(weather.clone().run());
 
     let app = web::router()
