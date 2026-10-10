@@ -70,7 +70,8 @@ pub struct DailyForecast {
     wind_deg: i32,
     weather: Vec<Weather>,
     clouds: i32,
-    pop: f32,
+    #[serde(default)]
+    pop: Option<f32>,
     #[serde(default)]
     uvi: Option<f32>,
     #[serde(default)]
