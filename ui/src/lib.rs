@@ -6,21 +6,22 @@ mod fmt;
 pub mod day;
 pub mod details;
 pub mod forecast;
+pub mod today;
 pub mod weather_icon;
 
 use embedded_graphics::{
     image::{Image, ImageDrawable},
-    mono_font::{
-        MonoTextStyle,
-        iso_8859_1::{FONT_7X14_BOLD, FONT_9X18_BOLD, FONT_10X20},
-    },
+    mono_font::MonoTextStyle,
     prelude::*,
     primitives::{
         Circle, Line, Primitive, PrimitiveStyle, Rectangle, RoundedRectangle, StyledDrawable,
     },
     text::Text,
 };
-use embedded_iconoir::{icons::size48px::weather, prelude::IconoirNewIcon};
+use embedded_iconoir::{
+    icons::{size48px::weather, size96px},
+    prelude::IconoirNewIcon,
+};
 use embedded_layout::{
     View,
     align::{Align, horizontal, vertical},
@@ -28,6 +29,7 @@ use embedded_layout::{
     object_chain::Chain,
 };
 use enum_iterator::next_cycle;
+use profont::{PROFONT_10_POINT, PROFONT_12_POINT, PROFONT_14_POINT, PROFONT_24_POINT};
 use rand::{RngExt, SeedableRng, rngs::SmallRng};
 pub use weact_studio_epd::TriColor;
 
@@ -35,10 +37,13 @@ use crate::{
     day::Day::{self},
     details::{Conditions, Details},
     forecast::Forecast,
-    weather_icon::WeatherIcon,
+    today::Today,
+    weather_icon::{LargeWeatherIcon, WeatherIcon},
 };
 
-const ROW_MARGIN: i32 = 8;
+const ROW_MARGIN: i32 = 10;
+const TODAY_SPACING: i32 = 15;
+const DETAIL_SPACING: i32 = 10;
 
 pub trait Widget: View + Drawable<Color = TriColor> {}
 impl<T: View + Drawable<Color = TriColor>> Widget for T {}
@@ -58,13 +63,13 @@ where
     Text::new(
         label,
         Point::new(10, 24),
-        MonoTextStyle::new(&FONT_10X20, primary),
+        MonoTextStyle::new(&PROFONT_14_POINT, primary),
     )
     .draw(display)?;
     Text::new(
         "black red white",
         Point::new(10, 48),
-        MonoTextStyle::new(&FONT_10X20, secondary),
+        MonoTextStyle::new(&PROFONT_14_POINT, secondary),
     )
     .draw(display)?;
 
@@ -94,7 +99,7 @@ where
         .into_styled(PrimitiveStyle::with_fill(primary))
         .draw(display)?;
 
-    Rectangle::new(Point::new(320, 170), Size::new(70, 120))
+    Rectangle::new(Point::new(320, 170), Size::new(65, 120))
         .into_styled(PrimitiveStyle::with_stroke(secondary, 3))
         .draw(display)?;
 
@@ -107,9 +112,26 @@ where
 {
     display.clear(TriColor::White)?;
 
+    let (mid_h, mid_v) = (
+        display.bounding_box().size().height / 2,
+        display.bounding_box().size().width / 2,
+    );
+    let divider_v = Line::new(
+        Point::new(mid_v as i32, 0),
+        Point::new(mid_v as i32, display.bounding_box().size().height as i32),
+    )
+    .into_styled(PrimitiveStyle::with_stroke(TriColor::Black, 1))
+    .draw(display)?;
+    let divider_h = Line::new(
+        Point::new(0, mid_h as i32),
+        Point::new(display.bounding_box().size().width as i32, mid_h as i32),
+    )
+    .into_styled(PrimitiveStyle::with_stroke(TriColor::Black, 1))
+    .draw(display)?;
+
     let (primary, secondary) = (TriColor::Black, TriColor::Red);
 
-    let mut rng = SmallRng::seed_from_u64(123);
+    let mut rng = SmallRng::seed_from_u64(12);
     let mut day = Day::Thursday;
     let forecasts = [
         WeatherIcon::Sunny(weather::SunLight::new(primary)),
@@ -121,8 +143,8 @@ where
     ]
     .map(|icon| {
         day = next_cycle(&day);
-        let low_temp: i8 = rng.random_range(-99..=99);
-        let high_temp: i8 = rng.random_range(-99..=99);
+        let low_temp: i8 = rng.random_range(10..=99);
+        let high_temp: i8 = rng.random_range(10..=99);
         forecast::Forecast::new(day, icon, low_temp, high_temp)
     });
 
@@ -132,7 +154,7 @@ where
             horizontal::Center,
             vertical::Bottom,
         )
-        .translate(Point::new(0, -ROW_MARGIN))
+        .translate(Point::new(0, -ROW_MARGIN / 2))
         .draw(display)?;
 
     title_row("Lisbon", "Thursday", "Oct 10")
@@ -154,10 +176,52 @@ where
 
     details_grid(&details)
         .align_to(&display.bounding_box(), horizontal::Right, vertical::Center)
-        .translate(Point::new(-ROW_MARGIN, -40))
+        .translate(Point::new(-ROW_MARGIN, -60))
+        .draw(display)?;
+
+    let today = Today::new(
+        LargeWeatherIcon::PartlyCloudy(size96px::weather::CloudSunny::new(primary)),
+        20.7,
+        19.9,
+    );
+
+    today_widget(&today)
+        .align_to(&display.bounding_box(), horizontal::Left, vertical::Center)
+        .translate(Point::new(ROW_MARGIN, -60))
         .draw(display)?;
 
     Ok(())
+}
+
+fn today_widget(today: &Today) -> impl Widget {
+    let temp_style = MonoTextStyle::new(&PROFONT_24_POINT, TriColor::Red);
+    let feels_like_style = MonoTextStyle::new(&PROFONT_14_POINT, TriColor::Black);
+
+    let temps = LinearLayout::vertical(
+        Chain::new(Text::new(&today.temp_txt, Point::zero(), temp_style)).append(Text::new(
+            &today.feels_like_txt,
+            Point::zero(),
+            feels_like_style,
+        )),
+    )
+    .with_alignment(horizontal::Left)
+    .with_spacing(FixedMargin(TODAY_SPACING / 2))
+    .arrange();
+
+    let divider = Line::new(
+        Point::zero(),
+        Point::new(0, today.icon.size().height as i32),
+    )
+    .into_styled(PrimitiveStyle::with_stroke(TriColor::Black, 1));
+
+    LinearLayout::horizontal(
+        Chain::new(Image::new(&today.icon, Point::zero()))
+            .append(temps)
+            .append(divider),
+    )
+    .with_alignment(vertical::Center)
+    .with_spacing(FixedMargin(TODAY_SPACING))
+    .arrange()
 }
 
 fn details_grid(details: &Details) -> impl Widget {
@@ -168,7 +232,7 @@ fn details_grid(details: &Details) -> impl Widget {
             .append(cell(&details.dew_point.icon, &details.dew_point.text)),
     )
     .with_alignment(horizontal::Left)
-    .with_spacing(FixedMargin(ROW_MARGIN / 2))
+    .with_spacing(FixedMargin(DETAIL_SPACING / 2))
     .arrange();
 
     let right = LinearLayout::vertical(
@@ -178,12 +242,12 @@ fn details_grid(details: &Details) -> impl Widget {
             .append(cell(&details.rain_chance.icon, &details.rain_chance.text)),
     )
     .with_alignment(horizontal::Left)
-    .with_spacing(FixedMargin(ROW_MARGIN / 2))
+    .with_spacing(FixedMargin(DETAIL_SPACING / 2))
     .arrange();
 
     LinearLayout::horizontal(Chain::new(left).append(right))
         .with_alignment(vertical::Top)
-        .with_spacing(FixedMargin(ROW_MARGIN * 2))
+        .with_spacing(FixedMargin(DETAIL_SPACING))
         .arrange()
 }
 
@@ -199,14 +263,19 @@ where
 }
 
 fn title_row(location: &str, week_day: &str, date: &str) -> impl Widget {
-    let style = MonoTextStyle::new(&FONT_9X18_BOLD, TriColor::Red);
+    let style = MonoTextStyle::new(&PROFONT_14_POINT, TriColor::Red);
     let separator = || Text::new("|", Point::zero(), style);
+
+    let divider = Line::new(Point::zero(), Point::new(0, 14))
+        .into_styled(PrimitiveStyle::with_stroke(TriColor::Red, 1));
 
     LinearLayout::horizontal(
         Chain::new(Text::new(location, Point::zero(), style))
-            .append(separator())
+            // .append(separator())
+            .append(divider)
             .append(Text::new(week_day, Point::zero(), style))
-            .append(separator())
+            // .append(separator())
+            .append(divider)
             .append(Text::new(date, Point::zero(), style)),
     )
     .with_alignment(vertical::Center)
@@ -215,7 +284,7 @@ fn title_row(location: &str, week_day: &str, date: &str) -> impl Widget {
 }
 
 fn cell<I: ImageDrawable<Color = TriColor>>(icon: &I, text: &str) -> impl Widget {
-    let style = MonoTextStyle::new(&FONT_7X14_BOLD, TriColor::Black);
+    let style = MonoTextStyle::new(&PROFONT_12_POINT, TriColor::Black);
 
     LinearLayout::horizontal(
         Chain::new(Image::new(icon, Point::zero())).append(Text::new(text, Point::zero(), style)),
@@ -226,7 +295,7 @@ fn cell<I: ImageDrawable<Color = TriColor>>(icon: &I, text: &str) -> impl Widget
 }
 
 fn day_widget(forecast: &Forecast) -> impl Widget {
-    let text_style = MonoTextStyle::new(&FONT_7X14_BOLD, TriColor::Red);
+    let text_style = MonoTextStyle::new(&PROFONT_10_POINT, TriColor::Red);
     let day = Text::new(forecast.week_day.as_short_str(), Point::zero(), text_style);
     let temp = Text::new(&forecast.temp_txt, Point::zero(), text_style);
 

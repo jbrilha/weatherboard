@@ -4,57 +4,64 @@ use embedded_graphics::{
     image::ImageDrawable,
     primitives::Rectangle,
 };
-use embedded_iconoir::{Icon, size48px::weather};
+use embedded_iconoir::{Icon, size48px, size96px};
 use weact_studio_epd::TriColor;
 
-pub enum WeatherIcon {
-    Sunny(Icon<TriColor, weather::SunLight>),
-    PartlyCloudy(Icon<TriColor, weather::CloudSunny>),
-    Cloudy(Icon<TriColor, weather::Cloud>),
-    Fog(Icon<TriColor, weather::Fog>),
-    Rain(Icon<TriColor, weather::Rain>),
-    HeavyRain(Icon<TriColor, weather::HeavyRain>),
-    Snow(Icon<TriColor, weather::Snow>),
-    Thunderstorm(Icon<TriColor, weather::Thunderstorm>),
-    Wind(Icon<TriColor, weather::Wind>),
-}
-
 macro_rules! with_icon {
-    ($self:expr, $icon:ident => $body:expr) => {
+    ($enum:ident, $self:expr, $icon:ident => $body:expr) => {
         match $self {
-            WeatherIcon::Sunny($icon) => $body,
-            WeatherIcon::PartlyCloudy($icon) => $body,
-            WeatherIcon::Cloudy($icon) => $body,
-            WeatherIcon::Fog($icon) => $body,
-            WeatherIcon::Rain($icon) => $body,
-            WeatherIcon::HeavyRain($icon) => $body,
-            WeatherIcon::Snow($icon) => $body,
-            WeatherIcon::Thunderstorm($icon) => $body,
-            WeatherIcon::Wind($icon) => $body,
+            $enum::Sunny($icon) => $body,
+            $enum::PartlyCloudy($icon) => $body,
+            $enum::Cloudy($icon) => $body,
+            $enum::Fog($icon) => $body,
+            $enum::Rain($icon) => $body,
+            $enum::HeavyRain($icon) => $body,
+            $enum::Snow($icon) => $body,
+            $enum::Thunderstorm($icon) => $body,
+            $enum::Wind($icon) => $body,
         }
     };
 }
 
-impl OriginDimensions for WeatherIcon {
-    fn size(&self) -> Size {
-        with_icon!(self, icon => icon.size())
-    }
+macro_rules! weather_icon {
+    ($name:ident, $size:ident) => {
+        pub enum $name {
+            Sunny(Icon<TriColor, $size::weather::SunLight>),
+            PartlyCloudy(Icon<TriColor, $size::weather::CloudSunny>),
+            Cloudy(Icon<TriColor, $size::weather::Cloud>),
+            Fog(Icon<TriColor, $size::weather::Fog>),
+            Rain(Icon<TriColor, $size::weather::Rain>),
+            HeavyRain(Icon<TriColor, $size::weather::HeavyRain>),
+            Snow(Icon<TriColor, $size::weather::Snow>),
+            Thunderstorm(Icon<TriColor, $size::weather::Thunderstorm>),
+            Wind(Icon<TriColor, $size::weather::Wind>),
+        }
+
+        impl OriginDimensions for $name {
+            fn size(&self) -> Size {
+                with_icon!($name, self, icon => icon.size())
+            }
+        }
+
+        impl ImageDrawable for $name {
+            type Color = TriColor;
+
+            fn draw<D>(&self, target: &mut D) -> Result<(), D::Error>
+            where
+                D: DrawTarget<Color = TriColor>,
+            {
+                with_icon!($name, self, icon => icon.draw(target))
+            }
+
+            fn draw_sub_image<D>(&self, target: &mut D, area: &Rectangle) -> Result<(), D::Error>
+            where
+                D: DrawTarget<Color = TriColor>,
+            {
+                with_icon!($name, self, icon => icon.draw_sub_image(target, area))
+            }
+        }
+    };
 }
 
-impl ImageDrawable for WeatherIcon {
-    type Color = TriColor;
-
-    fn draw<D>(&self, target: &mut D) -> Result<(), D::Error>
-    where
-        D: DrawTarget<Color = TriColor>,
-    {
-        with_icon!(self, icon => icon.draw(target))
-    }
-
-    fn draw_sub_image<D>(&self, target: &mut D, area: &Rectangle) -> Result<(), D::Error>
-    where
-        D: DrawTarget<Color = TriColor>,
-    {
-        with_icon!(self, icon => icon.draw_sub_image(target, area))
-    }
-}
+weather_icon!(WeatherIcon, size48px);
+weather_icon!(LargeWeatherIcon, size96px);

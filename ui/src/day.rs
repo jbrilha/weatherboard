@@ -45,7 +45,7 @@ impl Day {
         match self {
             Day::Sunday => "Sun",
             Day::Monday => "Mon",
-            Day::Tuesday => "Tues",
+            Day::Tuesday => "Tue",
             Day::Wednesday => "Wed",
             Day::Thursday => "Thu",
             Day::Friday => "Fri",

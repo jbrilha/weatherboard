@@ -15,7 +15,7 @@ pub struct Forecast {
 impl Forecast {
     pub fn new(week_day: Day, icon: WeatherIcon, low_temp: i8, high_temp: i8) -> Self {
         let mut temp_txt = String::new();
-        write!(temp_txt, "{low_temp}/{high_temp}").unwrap();
+        write!(temp_txt, " {low_temp}/{high_temp}°").unwrap();
 
         Self {
             week_day,
