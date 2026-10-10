@@ -46,7 +46,7 @@ pub struct Epd {
 }
 
 impl Epd {
-    pub fn new(ep: EpdPeripherals) -> Self {
+    pub fn new_with_refresh(ep: EpdPeripherals, refresh: Refresh) -> Self {
         let mut config = spi::Config::default();
         config.frequency = mhz(4);
         config.mode = spi::MODE_0;
@@ -65,9 +65,14 @@ impl Epd {
         Epd {
             driver,
             display: Display420TriColor::new(),
-            refresh: Refresh::FastFull,
+            refresh,
         }
     }
+
+    pub fn new(ep: EpdPeripherals) -> Self {
+        Epd::new_with_refresh(ep, Refresh::Full)
+    }
+
     pub async fn init(&mut self) -> weact_studio_epd::Result<()> {
         self.driver.init().await
     }
@@ -103,18 +108,9 @@ pub async fn epd_task(mut epd: Epd) {
         return;
     }
     info!("epd ready");
-    let style = MonoTextStyle::new(&FONT_10X20, TriColor::Black);
-    loop {
-        let d = epd.display();
-        d.clear(TriColor::White);
-        Text::new("12°C", Point::new(10, 30), style)
-            .draw(d)
-            .unwrap();
-        epd.flush().await.unwrap();
-        epd.sleep().await.unwrap();
-        Timer::after_secs(15 * 60).await;
-        epd.wake_up().await.unwrap();
-    }
+    draw_iconoir_test(&mut epd.display);
+    epd.flush().await.unwrap();
+    epd.sleep().await.unwrap();
 }
 
 #[embassy_executor::task]
@@ -164,4 +160,8 @@ fn draw_test_pattern(display: &mut Display420TriColor, refresh: Refresh, round: 
         Refresh::FastFull => "fast full refresh",
     };
     ui::test_pattern(display, label, round).unwrap();
+}
+
+fn draw_iconoir_test(display: &mut Display420TriColor) {
+    ui::iconoir_test(display).unwrap();
 }

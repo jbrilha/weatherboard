@@ -742,6 +742,7 @@ checksum = "4e8da660bb0c829b34a56a965490597f82a55e767b91f9543be80ce8ccb416fe"
 dependencies = [
  "az",
  "byteorder",
+ "defmt 0.3.100",
  "embedded-graphics-core",
  "float-cmp",
  "micromath",
@@ -755,6 +756,7 @@ checksum = "95743bef3ff70fcba3930246c4e6872882bbea0dcc6da2ca860112e0cd4bd09f"
 dependencies = [
  "az",
  "byteorder",
+ "defmt 0.3.100",
 ]
 
 [[package]]
@@ -813,6 +815,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "embedded-iconoir"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c52b9899b636b56d4e66834f7a90766d0bc6600c0f067d91ed0711b11fa3f5c8"
+dependencies = [
+ "bit_field",
+ "embedded-graphics",
+ "paste",
+ "static_assertions",
+]
+
+[[package]]
 name = "embedded-io"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -847,6 +861,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "embedded-layout"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a90553247f2b05c59ac7894ea13d830636c2b1203fa03bff400eddbd1fa9f52"
+dependencies = [
+ "embedded-graphics",
+ "embedded-layout-macros",
+]
+
+[[package]]
+name = "embedded-layout-macros"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f6e621fe4c7e05b695274b722dc0a60bacd1c8696b58191baa0154713d52400"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
 name = "embedded-storage"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -859,6 +894,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69aa7787b8ba0cf4e626c95839f811d853b75e24a0f7312a1eef324fedc13b21"
 dependencies = [
  "embedded-storage",
+]
+
+[[package]]
+name = "enum-iterator"
+version = "2.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4549325971814bda7a44061bf3fe7e487d447cba01e4220a4b454d630d7a016"
+dependencies = [
+ "enum-iterator-derive",
+]
+
+[[package]]
+name = "enum-iterator-derive"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "685adfa4d6f3d765a26bc5dbc936577de9abf756c1feeb3089b01dd395034842"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
 ]
 
 [[package]]
@@ -1292,6 +1347,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "paste"
+version = "1.0.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
+
+[[package]]
 name = "pin-project-lite"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1351,6 +1412,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fbf4db142a473a8d80c26bbf18454ed458bf8d26c8219c331daecfdbd079001"
 dependencies = [
  "proc-macro2",
+]
+
+[[package]]
+name = "rand"
+version = "0.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65c9fb96cbc91e3478eaae79a69fcd3f1ae4ad052e471fe6732fff548984b4af"
+dependencies = [
+ "rand_core 0.10.1",
 ]
 
 [[package]]
@@ -1799,7 +1869,14 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
 name = "ui"
 version = "0.1.0"
 dependencies = [
+ "defmt 1.1.1",
  "embedded-graphics",
+ "embedded-iconoir",
+ "embedded-layout",
+ "enum-iterator",
+ "heapless",
+ "log",
+ "rand",
  "weact-studio-epd",
 ]
 
