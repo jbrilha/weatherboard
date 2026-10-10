@@ -7,3 +7,4 @@ edition = "2024"
 ui.workspace = true
 embedded-graphics = "0.8.2"
 embedded-graphics-simulator = "0.8.0"
+env_logger = "0.11"
