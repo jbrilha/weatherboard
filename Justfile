@@ -6,6 +6,8 @@ flash:
 
 sim:
     cargo run -p sim
+sim-dev:
+    watchexec --restart --watch sim --watch common --watch ui --exts rs,toml -- cargo run -p sim
 
 server:
     cargo run -p server

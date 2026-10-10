@@ -4,14 +4,15 @@
 mod fmt;
 
 pub mod day;
+pub mod details;
 pub mod forecast;
 pub mod weather_icon;
 
 use embedded_graphics::{
-    image::Image,
+    image::{Image, ImageDrawable},
     mono_font::{
         MonoTextStyle,
-        iso_8859_1::{FONT_7X14_BOLD, FONT_10X20},
+        iso_8859_1::{FONT_7X14_BOLD, FONT_9X18_BOLD, FONT_10X20},
     },
     prelude::*,
     primitives::{
@@ -27,12 +28,12 @@ use embedded_layout::{
     object_chain::Chain,
 };
 use enum_iterator::next_cycle;
-use heapless::String;
 use rand::{RngExt, SeedableRng, rngs::SmallRng};
 pub use weact_studio_epd::TriColor;
 
 use crate::{
     day::Day::{self},
+    details::{Conditions, Details},
     forecast::Forecast,
     weather_icon::WeatherIcon,
 };
@@ -133,7 +134,57 @@ where
         )
         .translate(Point::new(0, -ROW_MARGIN))
         .draw(display)?;
+
+    title_row("Lisbon", "Thursday", "Oct 10")
+        .align_to(&display.bounding_box(), horizontal::Center, vertical::Top)
+        .translate(Point::new(0, ROW_MARGIN))
+        .draw(display)?;
+
+    let details = Details::new(&Conditions {
+        sunrise: 1_791_887_344,
+        sunset: 1_791_828_203,
+        timezone_offset: 3_600,
+        wind_kmh: 23.8,
+        humidity: 59,
+        pressure_hpa: 1019.3,
+        uvi: 4.9,
+        dew_point_c: 12.6,
+        rain_chance: 0.33,
+    });
+
+    details_grid(&details)
+        .align_to(&display.bounding_box(), horizontal::Right, vertical::Center)
+        .translate(Point::new(-ROW_MARGIN, -40))
+        .draw(display)?;
+
     Ok(())
+}
+
+fn details_grid(details: &Details) -> impl Widget {
+    let left = LinearLayout::vertical(
+        Chain::new(cell(&details.sunrise.icon, &details.sunrise.text))
+            .append(cell(&details.wind.icon, &details.wind.text))
+            .append(cell(&details.pressure.icon, &details.pressure.text))
+            .append(cell(&details.dew_point.icon, &details.dew_point.text)),
+    )
+    .with_alignment(horizontal::Left)
+    .with_spacing(FixedMargin(ROW_MARGIN / 2))
+    .arrange();
+
+    let right = LinearLayout::vertical(
+        Chain::new(cell(&details.sunset.icon, &details.sunset.text))
+            .append(cell(&details.humidity.icon, &details.humidity.text))
+            .append(cell(&details.uvi.icon, &details.uvi.text))
+            .append(cell(&details.rain_chance.icon, &details.rain_chance.text)),
+    )
+    .with_alignment(horizontal::Left)
+    .with_spacing(FixedMargin(ROW_MARGIN / 2))
+    .arrange();
+
+    LinearLayout::horizontal(Chain::new(left).append(right))
+        .with_alignment(vertical::Top)
+        .with_spacing(FixedMargin(ROW_MARGIN * 2))
+        .arrange()
 }
 
 fn border<D>(display: &mut D, color: TriColor) -> Result<(), D::Error>
@@ -147,27 +198,31 @@ where
     Ok(())
 }
 
-fn today_widget(location: String<16>, forecast: &Forecast) -> impl Widget {
-    let text_style = MonoTextStyle::new(&FONT_7X14_BOLD, TriColor::Red);
+fn title_row(location: &str, week_day: &str, date: &str) -> impl Widget {
+    let style = MonoTextStyle::new(&FONT_9X18_BOLD, TriColor::Red);
+    let separator = || Text::new("|", Point::zero(), style);
 
-    let mut location_date: String<48> = String::try_from(location.as_str()).unwrap();
-    location_date.push_str(forecast.week_day.as_str()).unwrap();
+    LinearLayout::horizontal(
+        Chain::new(Text::new(location, Point::zero(), style))
+            .append(separator())
+            .append(Text::new(week_day, Point::zero(), style))
+            .append(separator())
+            .append(Text::new(date, Point::zero(), style)),
+    )
+    .with_alignment(vertical::Center)
+    .with_spacing(FixedMargin(ROW_MARGIN))
+    .arrange()
+}
 
-    let title = Text::new(location_date.as_str(), Point::zero(), text_style);
-    let temp = Text::new(&forecast.temp_txt, Point::zero(), text_style);
+fn cell<I: ImageDrawable<Color = TriColor>>(icon: &I, text: &str) -> impl Widget {
+    let style = MonoTextStyle::new(&FONT_7X14_BOLD, TriColor::Black);
 
-    let img = Image::new(&forecast.icon, Point::zero());
-
-    let content = LinearLayout::vertical(Chain::new(title).append(img).append(temp))
-        .with_alignment(horizontal::Center)
-        .with_spacing(FixedMargin(ROW_MARGIN / 2))
-        .arrange()
-        .translate(Point::zero());
-
-    let frame = RoundedRectangle::with_equal_corners(content.bounds().offset(4), Size::new(6, 6))
-        .into_styled(PrimitiveStyle::with_stroke(TriColor::Black, 1));
-
-    Chain::new(frame).append(content)
+    LinearLayout::horizontal(
+        Chain::new(Image::new(icon, Point::zero())).append(Text::new(text, Point::zero(), style)),
+    )
+    .with_alignment(vertical::Center)
+    .with_spacing(FixedMargin(ROW_MARGIN / 2))
+    .arrange()
 }
 
 fn day_widget(forecast: &Forecast) -> impl Widget {
