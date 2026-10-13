@@ -17,7 +17,7 @@ use embedded_graphics::{
         Circle, Line, Polyline, Primitive, PrimitiveStyle, Rectangle, RoundedRectangle,
         StyledDrawable,
     },
-    text::Text,
+    text::{Alignment, Text},
 };
 use embedded_iconoir::{
     icons::{size48px::weather, size96px},
@@ -112,38 +112,42 @@ where
 }
 
 const X_LINE_MIN: i32 = 30;
-const X_LINE_MAX: i32 = 370;
+const X_LINE_STEP: i32 = 31;
 const Y_LINE_TOP: i32 = 160;
 const Y_LINE_BOT: i32 = 190;
 
+const fn hour_x(i: i32) -> i32 {
+    X_LINE_MIN + i * X_LINE_STEP
+}
+
 const TEMP_POINTS: [Point; 12] = [
-    Point::new(X_LINE_MIN, Y_LINE_BOT),
-    Point::new(60, Y_LINE_BOT),
-    Point::new(90, Y_LINE_BOT),
-    Point::new(120, Y_LINE_TOP),
-    Point::new(150, Y_LINE_TOP),
-    Point::new(180, Y_LINE_TOP),
-    Point::new(210, Y_LINE_TOP),
-    Point::new(240, Y_LINE_TOP),
-    Point::new(270, Y_LINE_BOT),
-    Point::new(300, Y_LINE_BOT),
-    Point::new(330, Y_LINE_BOT),
-    Point::new(X_LINE_MAX, Y_LINE_BOT),
+    Point::new(hour_x(0), Y_LINE_BOT),
+    Point::new(hour_x(1), Y_LINE_BOT),
+    Point::new(hour_x(2), Y_LINE_BOT),
+    Point::new(hour_x(3), Y_LINE_TOP),
+    Point::new(hour_x(4), Y_LINE_TOP),
+    Point::new(hour_x(5), Y_LINE_TOP),
+    Point::new(hour_x(6), Y_LINE_TOP),
+    Point::new(hour_x(7), Y_LINE_TOP),
+    Point::new(hour_x(8), Y_LINE_BOT),
+    Point::new(hour_x(9), Y_LINE_BOT),
+    Point::new(hour_x(10), Y_LINE_BOT),
+    Point::new(hour_x(11), Y_LINE_BOT),
 ];
 
 const POP_POINTS: [Point; 12] = [
-    Point::new(X_LINE_MIN, Y_LINE_TOP),
-    Point::new(60, Y_LINE_TOP),
-    Point::new(90, Y_LINE_TOP),
-    Point::new(120, Y_LINE_BOT),
-    Point::new(150, Y_LINE_BOT),
-    Point::new(180, Y_LINE_BOT),
-    Point::new(210, Y_LINE_BOT),
-    Point::new(240, Y_LINE_BOT),
-    Point::new(270, Y_LINE_TOP),
-    Point::new(300, Y_LINE_TOP),
-    Point::new(330, Y_LINE_TOP),
-    Point::new(X_LINE_MAX, Y_LINE_TOP),
+    Point::new(hour_x(0), Y_LINE_TOP),
+    Point::new(hour_x(1), Y_LINE_TOP),
+    Point::new(hour_x(2), Y_LINE_TOP),
+    Point::new(hour_x(3), Y_LINE_BOT),
+    Point::new(hour_x(4), Y_LINE_BOT),
+    Point::new(hour_x(5), Y_LINE_BOT),
+    Point::new(hour_x(6), Y_LINE_BOT),
+    Point::new(hour_x(7), Y_LINE_BOT),
+    Point::new(hour_x(8), Y_LINE_TOP),
+    Point::new(hour_x(9), Y_LINE_TOP),
+    Point::new(hour_x(10), Y_LINE_TOP),
+    Point::new(hour_x(11), Y_LINE_TOP),
 ];
 
 pub fn iconoir_test<D>(display: &mut D) -> Result<(), D::Error>
@@ -154,13 +158,13 @@ where
 
     // temp_line().draw(display)?;
     // pop_line().draw(display)?;
-    line_widget()
+    chart_widget()
         .align_to(
             &display.bounding_box(),
             horizontal::Center,
             vertical::Center,
         )
-        .translate(Point::new(0, 20))
+        .translate(Point::new(0, 25))
         .draw(display)?;
 
     /* let (mid_h, mid_v) = (
@@ -287,14 +291,14 @@ fn pop_line() -> impl Widget {
     Polyline::new(&POP_POINTS).into_styled(line_style)
 }
 
-fn line_widget() -> impl Widget {
+fn chart_widget() -> impl Widget {
     let temp_style = MonoTextStyle::new(&PROFONT_9_POINT, TriColor::Red);
     let high_temp = Text::new("36", Point::zero(), temp_style);
     let low_temp = Text::new("9", Point::zero(), temp_style);
 
     let pop_style = MonoTextStyle::new(&PROFONT_9_POINT, TriColor::Black);
     let high_pop = Text::new("100%", Point::zero(), pop_style);
-    let low_pop = Text::new("0&", Point::zero(), pop_style);
+    let low_pop = Text::new("0%", Point::zero(), pop_style);
 
     let temp = LinearLayout::vertical(Chain::new(high_temp).append(low_temp))
         .with_alignment(horizontal::Center)
@@ -307,38 +311,41 @@ fn line_widget() -> impl Widget {
         .arrange();
 
     let lines = Chain::new(temp_line()).append(pop_line());
+    let lines_origin = lines.bounds().top_left;
 
-    let full = Chain::new(temp).append(lines).append(pop);
-
-    let lines2 = LinearLayout::horizontal(full)
+    let row = LinearLayout::horizontal(Chain::new(temp).append(lines).append(pop))
         .with_alignment(vertical::Center)
         .with_spacing(FixedMargin(6))
         .arrange();
 
-    let fuller = Chain::new(lines2).append(lines).append(pop);
+    let lines_offset = row.inner().parent.object.bounds().top_left - lines_origin;
 
-    let HOURS: [Text<'_, MonoTextStyle<'_, TriColor>>; 12] = [
-        Text::new("8 AM", Point::zero(), pop_style),
-        Text::new("10 AM", Point::zero(), pop_style),
-        Text::new("12 PM", Point::zero(), pop_style),
-        Text::new("2 PM", Point::zero(), pop_style),
-        Text::new("4 PM", Point::zero(), pop_style),
-        Text::new("6 PM", Point::zero(), pop_style),
-        Text::new("8 PM", Point::zero(), pop_style),
-        Text::new("10 PM", Point::zero(), pop_style),
-        Text::new("12 AM", Point::zero(), pop_style),
-        Text::new("2 AM", Point::zero(), pop_style),
-        Text::new("4 AM", Point::zero(), pop_style),
-        Text::new("6 AM", Point::zero(), pop_style),
-    ];
+    Chain::new(row).append(hour_labels().translate(lines_offset))
+}
 
-    let hours = Chain::new(fuller).append(HOURS);
+fn hour_labels() -> impl Widget {
+    let style = MonoTextStyle::new(&PROFONT_7_POINT, TriColor::Black);
+    let label = |i: i32, txt| {
+        Text::with_alignment(
+            txt,
+            Point::new(hour_x(i), Y_LINE_BOT + 12),
+            style,
+            Alignment::Center,
+        )
+    };
 
-    LinearLayout::vertical(fuller)
-        .with_alignment(vertical::Center)
-        .with_spacing(FixedMargin(6))
-        .arrange()
-    // .translate(Point::new(0, 150))
+    Chain::new(label(0, "8AM"))
+        .append(label(1, "10AM"))
+        .append(label(2, "12PM"))
+        .append(label(3, "2PM"))
+        .append(label(4, "4PM"))
+        .append(label(5, "6PM"))
+        .append(label(6, "8PM"))
+        .append(label(7, "10PM"))
+        .append(label(8, "12AM"))
+        .append(label(9, "2AM"))
+        .append(label(10, "4AM"))
+        .append(label(11, "6AM"))
 }
 
 fn details_grid(details: &Details) -> impl Widget {
