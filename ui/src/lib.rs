@@ -14,7 +14,8 @@ use embedded_graphics::{
     mono_font::MonoTextStyle,
     prelude::*,
     primitives::{
-        Circle, Line, Primitive, PrimitiveStyle, Rectangle, RoundedRectangle, StyledDrawable,
+        Circle, Line, Polyline, Primitive, PrimitiveStyle, Rectangle, RoundedRectangle,
+        StyledDrawable,
     },
     text::Text,
 };
@@ -29,7 +30,10 @@ use embedded_layout::{
     object_chain::Chain,
 };
 use enum_iterator::next_cycle;
-use profont::{PROFONT_10_POINT, PROFONT_12_POINT, PROFONT_14_POINT, PROFONT_24_POINT};
+use profont::{
+    PROFONT_7_POINT, PROFONT_9_POINT, PROFONT_10_POINT, PROFONT_12_POINT, PROFONT_14_POINT,
+    PROFONT_24_POINT,
+};
 use rand::{RngExt, SeedableRng, rngs::SmallRng};
 pub use weact_studio_epd::TriColor;
 
@@ -44,6 +48,7 @@ use crate::{
 const ROW_MARGIN: i32 = 10;
 const TODAY_SPACING: i32 = 15;
 const DETAIL_SPACING: i32 = 10;
+const HIGH_LOW_SPACING: i32 = 20;
 
 pub trait Widget: View + Drawable<Color = TriColor> {}
 impl<T: View + Drawable<Color = TriColor>> Widget for T {}
@@ -106,13 +111,59 @@ where
     Ok(())
 }
 
+const X_LINE_MIN: i32 = 30;
+const X_LINE_MAX: i32 = 370;
+const Y_LINE_TOP: i32 = 160;
+const Y_LINE_BOT: i32 = 190;
+
+const TEMP_POINTS: [Point; 12] = [
+    Point::new(X_LINE_MIN, Y_LINE_BOT),
+    Point::new(60, Y_LINE_BOT),
+    Point::new(90, Y_LINE_BOT),
+    Point::new(120, Y_LINE_TOP),
+    Point::new(150, Y_LINE_TOP),
+    Point::new(180, Y_LINE_TOP),
+    Point::new(210, Y_LINE_TOP),
+    Point::new(240, Y_LINE_TOP),
+    Point::new(270, Y_LINE_BOT),
+    Point::new(300, Y_LINE_BOT),
+    Point::new(330, Y_LINE_BOT),
+    Point::new(X_LINE_MAX, Y_LINE_BOT),
+];
+
+const POP_POINTS: [Point; 12] = [
+    Point::new(X_LINE_MIN, Y_LINE_TOP),
+    Point::new(60, Y_LINE_TOP),
+    Point::new(90, Y_LINE_TOP),
+    Point::new(120, Y_LINE_BOT),
+    Point::new(150, Y_LINE_BOT),
+    Point::new(180, Y_LINE_BOT),
+    Point::new(210, Y_LINE_BOT),
+    Point::new(240, Y_LINE_BOT),
+    Point::new(270, Y_LINE_TOP),
+    Point::new(300, Y_LINE_TOP),
+    Point::new(330, Y_LINE_TOP),
+    Point::new(X_LINE_MAX, Y_LINE_TOP),
+];
+
 pub fn iconoir_test<D>(display: &mut D) -> Result<(), D::Error>
 where
     D: DrawTarget<Color = TriColor>,
 {
     display.clear(TriColor::White)?;
 
-    let (mid_h, mid_v) = (
+    // temp_line().draw(display)?;
+    // pop_line().draw(display)?;
+    line_widget()
+        .align_to(
+            &display.bounding_box(),
+            horizontal::Center,
+            vertical::Center,
+        )
+        .translate(Point::new(0, 20))
+        .draw(display)?;
+
+    /* let (mid_h, mid_v) = (
         display.bounding_box().size().height / 2,
         display.bounding_box().size().width / 2,
     );
@@ -127,7 +178,7 @@ where
         Point::new(display.bounding_box().size().width as i32, mid_h as i32),
     )
     .into_styled(PrimitiveStyle::with_stroke(TriColor::Black, 1))
-    .draw(display)?;
+    .draw(display)?; */
 
     let (primary, secondary) = (TriColor::Black, TriColor::Red);
 
@@ -138,7 +189,7 @@ where
         WeatherIcon::PartlyCloudy(weather::CloudSunny::new(primary)),
         WeatherIcon::Cloudy(weather::Cloud::new(primary)),
         WeatherIcon::Rain(weather::Rain::new(primary)),
-        WeatherIcon::Thunderstorm(weather::Thunderstorm::new(secondary)),
+        WeatherIcon::Thunderstorm(weather::Thunderstorm::new(primary)),
         WeatherIcon::Snow(weather::Snow::new(primary)),
     ]
     .map(|icon| {
@@ -224,6 +275,72 @@ fn today_widget(today: &Today) -> impl Widget {
     .arrange()
 }
 
+fn temp_line() -> impl Widget {
+    let line_style = PrimitiveStyle::with_stroke(TriColor::Red, 1);
+
+    Polyline::new(&TEMP_POINTS).into_styled(line_style)
+}
+
+fn pop_line() -> impl Widget {
+    let line_style = PrimitiveStyle::with_stroke(TriColor::Black, 1);
+
+    Polyline::new(&POP_POINTS).into_styled(line_style)
+}
+
+fn line_widget() -> impl Widget {
+    let temp_style = MonoTextStyle::new(&PROFONT_9_POINT, TriColor::Red);
+    let high_temp = Text::new("36", Point::zero(), temp_style);
+    let low_temp = Text::new("9", Point::zero(), temp_style);
+
+    let pop_style = MonoTextStyle::new(&PROFONT_9_POINT, TriColor::Black);
+    let high_pop = Text::new("100%", Point::zero(), pop_style);
+    let low_pop = Text::new("0&", Point::zero(), pop_style);
+
+    let temp = LinearLayout::vertical(Chain::new(high_temp).append(low_temp))
+        .with_alignment(horizontal::Center)
+        .with_spacing(FixedMargin(HIGH_LOW_SPACING))
+        .arrange();
+
+    let pop = LinearLayout::vertical(Chain::new(high_pop).append(low_pop))
+        .with_alignment(horizontal::Center)
+        .with_spacing(FixedMargin(HIGH_LOW_SPACING))
+        .arrange();
+
+    let lines = Chain::new(temp_line()).append(pop_line());
+
+    let full = Chain::new(temp).append(lines).append(pop);
+
+    let lines2 = LinearLayout::horizontal(full)
+        .with_alignment(vertical::Center)
+        .with_spacing(FixedMargin(6))
+        .arrange();
+
+    let fuller = Chain::new(lines2).append(lines).append(pop);
+
+    let HOURS: [Text<'_, MonoTextStyle<'_, TriColor>>; 12] = [
+        Text::new("8 AM", Point::zero(), pop_style),
+        Text::new("10 AM", Point::zero(), pop_style),
+        Text::new("12 PM", Point::zero(), pop_style),
+        Text::new("2 PM", Point::zero(), pop_style),
+        Text::new("4 PM", Point::zero(), pop_style),
+        Text::new("6 PM", Point::zero(), pop_style),
+        Text::new("8 PM", Point::zero(), pop_style),
+        Text::new("10 PM", Point::zero(), pop_style),
+        Text::new("12 AM", Point::zero(), pop_style),
+        Text::new("2 AM", Point::zero(), pop_style),
+        Text::new("4 AM", Point::zero(), pop_style),
+        Text::new("6 AM", Point::zero(), pop_style),
+    ];
+
+    let hours = Chain::new(fuller).append(HOURS);
+
+    LinearLayout::vertical(fuller)
+        .with_alignment(vertical::Center)
+        .with_spacing(FixedMargin(6))
+        .arrange()
+    // .translate(Point::new(0, 150))
+}
+
 fn details_grid(details: &Details) -> impl Widget {
     let left = LinearLayout::vertical(
         Chain::new(cell(&details.sunrise.icon, &details.sunrise.text))
@@ -264,7 +381,6 @@ where
 
 fn title_row(location: &str, week_day: &str, date: &str) -> impl Widget {
     let style = MonoTextStyle::new(&PROFONT_14_POINT, TriColor::Red);
-    let separator = || Text::new("|", Point::zero(), style);
 
     let divider = Line::new(Point::zero(), Point::new(0, 14))
         .into_styled(PrimitiveStyle::with_stroke(TriColor::Red, 1));
