@@ -3,6 +3,7 @@
 #[macro_use]
 mod fmt;
 
+pub mod chart;
 pub mod day;
 pub mod details;
 pub mod forecast;
@@ -38,6 +39,7 @@ use rand::{RngExt, SeedableRng, rngs::SmallRng};
 pub use weact_studio_epd::TriColor;
 
 use crate::{
+    chart::Chart,
     day::Day::{self},
     details::{Conditions, Details},
     forecast::Forecast,
@@ -122,33 +124,35 @@ const fn hour_x(i: i32) -> i32 {
 
 const TEMP_POINTS: [Point; 12] = [
     Point::new(hour_x(0), Y_LINE_BOT),
-    Point::new(hour_x(1), Y_LINE_BOT),
+    Point::new(hour_x(1), Y_LINE_TOP),
     Point::new(hour_x(2), Y_LINE_BOT),
     Point::new(hour_x(3), Y_LINE_TOP),
-    Point::new(hour_x(4), Y_LINE_TOP),
+    Point::new(hour_x(4), Y_LINE_BOT),
     Point::new(hour_x(5), Y_LINE_TOP),
-    Point::new(hour_x(6), Y_LINE_TOP),
+    Point::new(hour_x(6), Y_LINE_BOT),
     Point::new(hour_x(7), Y_LINE_TOP),
     Point::new(hour_x(8), Y_LINE_BOT),
-    Point::new(hour_x(9), Y_LINE_BOT),
+    Point::new(hour_x(9), Y_LINE_TOP),
     Point::new(hour_x(10), Y_LINE_BOT),
-    Point::new(hour_x(11), Y_LINE_BOT),
+    Point::new(hour_x(11), Y_LINE_TOP),
 ];
 
 const POP_POINTS: [Point; 12] = [
     Point::new(hour_x(0), Y_LINE_TOP),
-    Point::new(hour_x(1), Y_LINE_TOP),
+    Point::new(hour_x(1), Y_LINE_BOT),
     Point::new(hour_x(2), Y_LINE_TOP),
     Point::new(hour_x(3), Y_LINE_BOT),
-    Point::new(hour_x(4), Y_LINE_BOT),
+    Point::new(hour_x(4), Y_LINE_TOP),
     Point::new(hour_x(5), Y_LINE_BOT),
-    Point::new(hour_x(6), Y_LINE_BOT),
+    Point::new(hour_x(6), Y_LINE_TOP),
     Point::new(hour_x(7), Y_LINE_BOT),
     Point::new(hour_x(8), Y_LINE_TOP),
-    Point::new(hour_x(9), Y_LINE_TOP),
+    Point::new(hour_x(9), Y_LINE_BOT),
     Point::new(hour_x(10), Y_LINE_TOP),
-    Point::new(hour_x(11), Y_LINE_TOP),
+    Point::new(hour_x(11), Y_LINE_BOT),
 ];
+
+const HOUR0: usize = 8;
 
 pub fn iconoir_test<D>(display: &mut D) -> Result<(), D::Error>
 where
@@ -158,7 +162,9 @@ where
 
     // temp_line().draw(display)?;
     // pop_line().draw(display)?;
-    chart_widget()
+    let chart = Chart::new(core::array::from_fn(|i| ((HOUR0 + 2 * i) % 24) as u8));
+
+    chart_widget(&chart)
         .align_to(
             &display.bounding_box(),
             horizontal::Center,
@@ -279,22 +285,16 @@ fn today_widget(today: &Today) -> impl Widget {
     .arrange()
 }
 
-fn temp_line() -> impl Widget {
-    let line_style = PrimitiveStyle::with_stroke(TriColor::Red, 1);
+fn chart_line(points: &[Point; 12], color: TriColor) -> impl Widget {
+    let line_style = PrimitiveStyle::with_stroke(color, 2);
 
-    Polyline::new(&TEMP_POINTS).into_styled(line_style)
+    Polyline::new(points).into_styled(line_style)
 }
 
-fn pop_line() -> impl Widget {
-    let line_style = PrimitiveStyle::with_stroke(TriColor::Black, 1);
-
-    Polyline::new(&POP_POINTS).into_styled(line_style)
-}
-
-fn chart_widget() -> impl Widget {
+fn chart_widget(chart: &Chart) -> impl Widget {
     let temp_style = MonoTextStyle::new(&PROFONT_9_POINT, TriColor::Red);
-    let high_temp = Text::new("36", Point::zero(), temp_style);
-    let low_temp = Text::new("9", Point::zero(), temp_style);
+    let high_temp = Text::new("36°", Point::zero(), temp_style);
+    let low_temp = Text::new("9°", Point::zero(), temp_style);
 
     let pop_style = MonoTextStyle::new(&PROFONT_9_POINT, TriColor::Black);
     let high_pop = Text::new("100%", Point::zero(), pop_style);
@@ -310,42 +310,43 @@ fn chart_widget() -> impl Widget {
         .with_spacing(FixedMargin(HIGH_LOW_SPACING))
         .arrange();
 
-    let lines = Chain::new(temp_line()).append(pop_line());
+    let lines = Chain::new(chart_line(&TEMP_POINTS, TriColor::Red))
+        .append(chart_line(&POP_POINTS, TriColor::Black));
     let lines_origin = lines.bounds().top_left;
 
     let row = LinearLayout::horizontal(Chain::new(temp).append(lines).append(pop))
         .with_alignment(vertical::Center)
-        .with_spacing(FixedMargin(6))
+        .with_spacing(FixedMargin(4))
         .arrange();
 
     let lines_offset = row.inner().parent.object.bounds().top_left - lines_origin;
 
-    Chain::new(row).append(hour_labels().translate(lines_offset))
+    Chain::new(row).append(hour_labels(chart).translate(lines_offset))
 }
 
-fn hour_labels() -> impl Widget {
+fn hour_labels(chart: &Chart) -> impl Widget {
     let style = MonoTextStyle::new(&PROFONT_7_POINT, TriColor::Black);
-    let label = |i: i32, txt| {
+    let label = |i: usize| {
         Text::with_alignment(
-            txt,
-            Point::new(hour_x(i), Y_LINE_BOT + 12),
+            &chart.hour_txt[i],
+            Point::new(hour_x(i as i32), Y_LINE_BOT + 12),
             style,
             Alignment::Center,
         )
     };
 
-    Chain::new(label(0, "8AM"))
-        .append(label(1, "10AM"))
-        .append(label(2, "12PM"))
-        .append(label(3, "2PM"))
-        .append(label(4, "4PM"))
-        .append(label(5, "6PM"))
-        .append(label(6, "8PM"))
-        .append(label(7, "10PM"))
-        .append(label(8, "12AM"))
-        .append(label(9, "2AM"))
-        .append(label(10, "4AM"))
-        .append(label(11, "6AM"))
+    Chain::new(label(0))
+        .append(label(1))
+        .append(label(2))
+        .append(label(3))
+        .append(label(4))
+        .append(label(5))
+        .append(label(6))
+        .append(label(7))
+        .append(label(8))
+        .append(label(9))
+        .append(label(10))
+        .append(label(11))
 }
 
 fn details_grid(details: &Details) -> impl Widget {
