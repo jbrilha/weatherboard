@@ -5,7 +5,7 @@ pub mod ipc;
 use serde::{Deserialize, Serialize};
 pub use uuid::Uuid;
 
-pub const PAYLOAD_VERSION: u8 = 1;
+pub const PAYLOAD_VERSION: u8 = u8::MAX;
 pub const MAX_PAYLOAD_LEN: usize = 512;
 pub const TEST_LEN: usize = 32;
 
@@ -30,7 +30,8 @@ impl Payload {
         let mut i = 0;
         let buf = buf.map(|_| {
             i = i + 1;
-            u64::MAX - i
+            // u64::MAX - i
+            i
         });
         Self {
             version: u8::MAX,

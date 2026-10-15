@@ -3,7 +3,7 @@ use std::{
     time::Duration,
 };
 
-use common::ipc::HUB_SOCKET;
+use common::{MAX_PAYLOAD_LEN, Payload, ipc::HUB_SOCKET};
 use futures::SinkExt;
 use futures::stream::StreamExt;
 use tokio::{
@@ -35,7 +35,10 @@ impl IpcService {
         loop {
             self.socket.send(Bytes::from_static(b"ping")).await?;
             if let Some(frame) = self.socket.next().await {
-                println!("got {:?}", frame?);
+                let f = frame?;
+                let buf: &[u8; MAX_PAYLOAD_LEN] = f.as_array().unwrap();
+                let p = Payload::decode(buf);
+                println!("got {:?}", p);
             }
             tokio::time::sleep(Duration::from_secs(10)).await;
         }
