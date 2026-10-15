@@ -2,18 +2,12 @@ mod ipc;
 mod weather;
 mod web;
 
-use std::{path::Path, sync::Arc, time::Duration};
+use std::sync::Arc;
 
-use common::ipc::HUB_SOCKET;
-use futures::{SinkExt, StreamExt};
-use tokio::net::{UnixListener, UnixStream};
-use tokio_util::bytes::Bytes;
-use tokio_util::codec::{Framed, LengthDelimitedCodec};
 use tower_http::trace::TraceLayer;
-use tracing::info;
 use tracing_subscriber::EnvFilter;
 
-use weather::{WeatherRequest, client::WeatherClient, service::WeatherService};
+use weather::service::WeatherService;
 
 use crate::ipc::IpcService;
 

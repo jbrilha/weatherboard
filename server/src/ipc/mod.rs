@@ -1,11 +1,7 @@
-use std::{
-    sync::{Arc, Mutex},
-    time::Duration,
-};
 
 use common::ipc::HUB_SOCKET;
 use futures::{SinkExt, StreamExt};
-use tokio::{net::UnixListener, sync::watch};
+use tokio::net::UnixListener;
 use tokio_util::bytes::Bytes;
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
 use tracing::info;
