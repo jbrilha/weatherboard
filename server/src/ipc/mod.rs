@@ -27,11 +27,11 @@ impl IpcService {
         loop {
             let (stream, _) = self.listener.accept().await?;
             let mut socket = Framed::new(stream, LengthDelimitedCodec::new());
-            payload.encode(buf)?;
+            let bytes = payload.encode(buf)?;
 
             while let Some(frame) = socket.next().await {
                 info!("got {:?}", frame?);
-                socket.send(Bytes::copy_from_slice(buf)).await?;
+                socket.send(Bytes::copy_from_slice(bytes)).await?;
             }
         }
     }

@@ -35,9 +35,7 @@ impl IpcService {
         loop {
             self.socket.send(Bytes::from_static(b"ping")).await?;
             if let Some(frame) = self.socket.next().await {
-                let f = frame?;
-                let buf: &[u8; MAX_PAYLOAD_LEN] = f.as_array().unwrap();
-                let p = Payload::decode(buf);
+                let p = Payload::decode(&frame?);
                 println!("got {:?}", p);
             }
             tokio::time::sleep(Duration::from_secs(10)).await;
