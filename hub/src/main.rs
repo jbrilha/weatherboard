@@ -1,14 +1,25 @@
 // See the "macOS permissions note" in README.md before running this on macOS
 // Big Sur or later.
 
+mod ipc;
+
 use btleplug::api::WriteType;
 use btleplug::api::{
     Central, CentralEvent, Manager as _, Peripheral, ScanFilter, bleuuid::BleUuid,
 };
 use btleplug::platform::{Adapter, Manager};
+use common::ipc::HUB_SOCKET;
 use common::{MAX_PAYLOAD_LEN, Payload, display_service_uuid, weather_payload_uuid};
+use futures::SinkExt;
 use futures::stream::StreamExt;
+use std::path::Path;
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::net::UnixStream;
+use tokio_util::bytes::{BufMut, Bytes};
+use tokio_util::codec::{Framed, LengthDelimitedCodec};
+
+use crate::ipc::IpcService;
 
 async fn get_central(manager: &Manager) -> Adapter {
     let adapters = manager.adapters().await.unwrap();
@@ -18,6 +29,9 @@ async fn get_central(manager: &Manager) -> Adapter {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
+
+    let ipc = IpcService::default().await?;
+    tokio::spawn(ipc.run());
 
     let manager = Manager::new().await?;
 

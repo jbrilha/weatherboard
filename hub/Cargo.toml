@@ -11,7 +11,8 @@ reqwest.workspace = true
 serde = { workspace = true, features = ["std"] }
 serde_json.workspace = true
 tokio.workspace = true
+tokio-util.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 btleplug = { version = "0.13.4", features = ["serde"] }
-futures = "0.3.34"
+futures.workspace = true

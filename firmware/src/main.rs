@@ -25,7 +25,7 @@ async fn main(spawner: Spawner) {
     let b = Board::init();
     info!("init done");
 
-    // ble::start(spawner).await;
+    ble::start(spawner).await;
 
     // let imu = Imu::new(b.imu);
     // spawner.spawn(imu_task(imu).unwrap());
