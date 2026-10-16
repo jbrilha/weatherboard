@@ -11,6 +11,9 @@ use weather::service::WeatherService;
 
 use crate::ipc::IpcService;
 
+const HOST: &str = "127.0.0.1";
+const PORT: &str = "3030";
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
@@ -31,7 +34,8 @@ async fn main() -> anyhow::Result<()> {
     #[cfg(feature = "livereload")]
     let app = app.layer(tower_livereload::LiveReloadLayer::new());
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
+    let bind_addr = format!("{}:{}", HOST, PORT);
+    let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
     tracing::info!("listening on {}", listener.local_addr()?);
     axum::serve(listener, app).await?;
 
