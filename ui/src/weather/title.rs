@@ -13,7 +13,8 @@ use heapless::String;
 use profont::PROFONT_14_POINT;
 use weact_studio_epd::TriColor;
 
-use crate::{ROW_MARGIN, Widget, day::Day};
+use crate::Widget;
+use crate::weather::{ROW_MARGIN, day::Day};
 
 pub struct Title {
     pub location: String<16>,

@@ -16,7 +16,8 @@ use heapless::String;
 use profont::{PROFONT_14_POINT, PROFONT_24_POINT};
 use weact_studio_epd::TriColor;
 
-use crate::{Widget, weather_icon::LargeWeatherIcon};
+use crate::Widget;
+use crate::weather::weather_icon::LargeWeatherIcon;
 
 const TODAY_SPACING: i32 = 15;
 

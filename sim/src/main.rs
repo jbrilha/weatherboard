@@ -20,7 +20,7 @@ fn main() {
 
     'running: loop {
         // ui::test_pattern(&mut epd, "simulator", round).unwrap();
-        ui::iconoir_test(&mut epd).unwrap();
+        ui::weather::dashboard(&mut epd).unwrap();
         window.update(&epd);
 
         for event in window.events() {

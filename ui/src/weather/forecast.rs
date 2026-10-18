@@ -2,7 +2,7 @@ use core::fmt::Write;
 
 use heapless::String;
 
-use crate::{day::Day, weather_icon::WeatherIcon};
+use crate::weather::{day::Day, weather_icon::WeatherIcon};
 
 pub struct Forecast {
     pub week_day: Day,

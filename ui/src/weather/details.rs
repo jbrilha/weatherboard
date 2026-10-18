@@ -26,7 +26,8 @@ use heapless::String;
 use profont::PROFONT_12_POINT;
 use weact_studio_epd::TriColor;
 
-use crate::{ROW_MARGIN, Widget};
+use crate::Widget;
+use crate::weather::ROW_MARGIN;
 
 const DETAIL_SPACING: i32 = 10;
 

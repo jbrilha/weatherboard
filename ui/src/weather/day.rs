@@ -17,7 +17,8 @@ use profont::PROFONT_10_POINT;
 use strum::EnumString;
 pub use weact_studio_epd::TriColor;
 
-use crate::{Widget, forecast::Forecast};
+use crate::Widget;
+use crate::weather::forecast::Forecast;
 
 const ROW_MARGIN: i32 = 10;
 
