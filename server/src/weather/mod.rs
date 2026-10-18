@@ -1,5 +1,6 @@
 pub mod client;
 pub mod openweathermap;
+pub mod payload;
 pub mod service;
 
 use common::weather::Location;
