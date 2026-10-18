@@ -2,7 +2,7 @@ use embedded_graphics::prelude::*;
 use embedded_graphics_simulator::{
     OutputSettings, SimulatorDisplay, SimulatorEvent, Window, sdl2::Keycode,
 };
-use ui::TriColor;
+use ui::{TriColor, weather::WeatherInfo};
 
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
@@ -20,7 +20,7 @@ fn main() {
 
     'running: loop {
         // ui::test_pattern(&mut epd, "simulator", round).unwrap();
-        ui::weather::dashboard(&mut epd).unwrap();
+        ui::weather::dashboard(&mut epd, &&WeatherInfo::default()).unwrap();
         window.update(&epd);
 
         for event in window.events() {
