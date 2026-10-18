@@ -101,9 +101,9 @@ pub struct DailyForecast {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct HourlyForecast {
-    dt: i32,
-    temp: Temperature,
-    feels_like: FeelsLike,
+    pub dt: i64,
+    pub temp: f32,
+    feels_like: f32,
     pressure: f32,
     humidity: i32,
     dew_point: f32,
@@ -114,7 +114,7 @@ pub struct HourlyForecast {
     wind_deg: i32,
     weather: Vec<Weather>,
     #[serde(default)]
-    pop: Option<f32>,
+    pub pop: Option<f32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
