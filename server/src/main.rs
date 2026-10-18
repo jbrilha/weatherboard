@@ -22,11 +22,11 @@ async fn main() -> anyhow::Result<()> {
         )
         .init();
 
-    let ipc = IpcService::default()?;
-    tokio::spawn(ipc.run());
-
     let weather = Arc::new(WeatherService::default());
     tokio::spawn(weather.clone().run());
+
+    let ipc = IpcService::default(weather.clone())?;
+    tokio::spawn(ipc.run());
 
     let app = web::router()
         .with_state(weather)
