@@ -4,7 +4,7 @@ use askama::Template;
 use axum::{Json, Router, extract::State, http::StatusCode, response::Html, routing::get};
 use tower_http::services::ServeDir;
 
-use crate::weather::{self, Ip, openweathermap::Forecast, service::WeatherService};
+use crate::weather::{self, Ip, openweathermap::Forecast1Day, service::WeatherService};
 
 type WebResult<T> = Result<T, (StatusCode, String)>;
 
@@ -12,14 +12,14 @@ type WebResult<T> = Result<T, (StatusCode, String)>;
 #[template(path = "index.html")]
 struct IndexTemplate {
     ip: Ip,
-    forecast: Arc<Forecast>,
+    forecast: Arc<Forecast1Day>,
 }
 
 #[derive(Template)]
 #[template(path = "weather.html")]
 struct WeatherTemplate {
     ip: Ip,
-    forecast: Arc<Forecast>,
+    forecast: Arc<Forecast1Day>,
 }
 
 pub fn router() -> Router<Arc<WeatherService>> {
@@ -44,7 +44,7 @@ fn bad_gateway(err: anyhow::Error) -> (StatusCode, String) {
     (StatusCode::BAD_GATEWAY, err.to_string())
 }
 
-fn latest(weather: &WeatherService) -> WebResult<Arc<Forecast>> {
+fn latest(weather: &WeatherService) -> WebResult<Arc<Forecast1Day>> {
     weather.latest().ok_or_else(|| {
         let reason = weather
             .last_error()

@@ -44,10 +44,30 @@ pub struct FeelsLike {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub enum WeatherMain {
+    Ash,
+    Clear,
+    Clouds,
+    Drizzle,
+    Dust,
+    Fog,
+    Haze,
+    Mist,
+    Rain,
+    Sand,
+    Smoke,
+    Snow,
+    Squall,
+    Thunderstorm,
+    Tornado,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct Weather {
     id: i32,
-    main: String,
+    main: WeatherMain,
     description: String,
     icon: String,
 }
@@ -80,19 +100,61 @@ pub struct DailyForecast {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub struct Forecast {
+pub struct HourlyForecast {
+    dt: i32,
+    temp: Temperature,
+    feels_like: FeelsLike,
+    pressure: f32,
+    humidity: i32,
+    dew_point: f32,
+    #[serde(default)]
+    uvi: Option<f32>,
+    clouds: i32,
+    wind_speed: f32,
+    wind_deg: i32,
+    weather: Vec<Weather>,
+    #[serde(default)]
+    pop: Option<f32>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct QuarterHourlyForecast {
+    dt: i32,
+    temp: Temperature,
+    feels_like: FeelsLike,
+    pressure: f32,
+    humidity: i32,
+    dew_point: f32,
+    #[serde(default)]
+    uvi: Option<f32>,
+    wind_speed: f32,
+    wind_deg: i32,
+    #[serde(default)]
+    pop: Option<f32>,
+    weather: Vec<Weather>,
+    clouds: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct Forecast<T> {
     pub lat: f32,
     pub lon: f32,
     pub timezone: String,
     pub timezone_offset: i32,
-    pub data: Vec<DailyForecast>,
+    pub data: Vec<T>,
 }
 
-impl Forecast {
+impl<T: Serialize> Forecast<T> {
     pub fn pretty_json(&self) -> String {
         serde_json::to_string_pretty(self).unwrap_or_default()
     }
 }
+
+pub type Forecast1Day = Forecast<DailyForecast>;
+pub type Forecast1Hour = Forecast<HourlyForecast>;
+pub type Forecast15Min = Forecast<HourlyForecast>;
 
 #[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

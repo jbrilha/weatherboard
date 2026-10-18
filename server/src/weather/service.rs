@@ -8,7 +8,7 @@ use tokio::sync::watch;
 use crate::weather::{
     WeatherParams,
     locations::Location,
-    openweathermap::{Forecast, OpenCallEndpoint, Units},
+    openweathermap::{Forecast1Day, OpenCallEndpoint, Units},
 };
 
 use super::{WeatherRequest, client::WeatherClient};
@@ -19,7 +19,7 @@ const RETRY_INTERVAL: Duration = Duration::from_secs(30);
 pub struct WeatherService {
     client: WeatherClient,
     request: WeatherRequest,
-    latest: watch::Sender<Option<Arc<Forecast>>>,
+    latest: watch::Sender<Option<Arc<Forecast1Day>>>,
     last_error: Mutex<Option<String>>,
 }
 
@@ -43,7 +43,7 @@ impl WeatherService {
         WeatherService::new(client, request)
     }
 
-    pub fn latest(&self) -> Option<Arc<Forecast>> {
+    pub fn latest(&self) -> Option<Arc<Forecast1Day>> {
         self.latest.borrow().clone()
     }
 
