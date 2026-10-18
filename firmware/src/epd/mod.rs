@@ -108,7 +108,9 @@ pub async fn epd_task(mut epd: Epd) {
         return;
     }
     info!("epd ready");
-    draw_iconoir_test(&mut epd.display);
+
+    ui::weather::dashboard(&mut epd.display).unwrap();
+
     epd.flush().await.unwrap();
     epd.sleep().await.unwrap();
 }
@@ -162,6 +164,6 @@ fn draw_test_pattern(display: &mut Display420TriColor, refresh: Refresh, round: 
     ui::test_pattern(display, label, round).unwrap();
 }
 
-fn draw_iconoir_test(display: &mut Display420TriColor) {
-    ui::iconoir_test(display).unwrap();
+fn draw_weather_dashboaard(display: &mut Display420TriColor) {
+    ui::weather::dashboard(display).unwrap();
 }

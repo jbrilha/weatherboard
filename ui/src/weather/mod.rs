@@ -40,17 +40,6 @@ where
 {
     display.clear(TriColor::White)?;
 
-    let chart = Chart::new(core::array::from_fn(|i| ((HOUR0 + 2 * i) % 24) as u8));
-
-    chart_widget(&chart)
-        .align_to(
-            &display.bounding_box(),
-            horizontal::Center,
-            vertical::Center,
-        )
-        .translate(Point::new(0, 25))
-        .draw(display)?;
-
     /* let (mid_h, mid_v) = (
         display.bounding_box().size().height / 2,
         display.bounding_box().size().width / 2,
@@ -69,6 +58,48 @@ where
     .draw(display)?; */
 
     let (primary, secondary) = (TriColor::Black, TriColor::Red);
+
+    let title = Title::new("Lisbon", Day::Thursday, "Oct 10");
+    title_row(&title)
+        .align_to(&display.bounding_box(), horizontal::Center, vertical::Top)
+        .translate(Point::new(0, ROW_MARGIN))
+        .draw(display)?;
+
+    let today = Today::new(
+        LargeWeatherIcon::PartlyCloudy(size96px::weather::CloudSunny::new(primary)),
+        20.7,
+        19.9,
+    );
+    today_widget(&today)
+        .align_to(&display.bounding_box(), horizontal::Left, vertical::Center)
+        .translate(Point::new(ROW_MARGIN, -60))
+        .draw(display)?;
+
+    let details = Details::new(&Conditions {
+        sunrise: 1_791_887_344,
+        sunset: 1_791_828_203,
+        timezone_offset: 3_600,
+        wind_kmh: 23.8,
+        humidity: 59,
+        pressure_hpa: 1019.3,
+        uvi: 4.9,
+        dew_point_c: 12.6,
+        rain_chance: 0.33,
+    });
+    details_grid(&details)
+        .align_to(&display.bounding_box(), horizontal::Right, vertical::Center)
+        .translate(Point::new(-ROW_MARGIN, -60))
+        .draw(display)?;
+
+    let chart = Chart::new(core::array::from_fn(|i| ((HOUR0 + 2 * i) % 24) as u8));
+    chart_widget(&chart)
+        .align_to(
+            &display.bounding_box(),
+            horizontal::Center,
+            vertical::Center,
+        )
+        .translate(Point::new(0, 25))
+        .draw(display)?;
 
     let mut rng = SmallRng::seed_from_u64(12);
     let mut day = Day::Thursday;
@@ -94,41 +125,6 @@ where
             vertical::Bottom,
         )
         .translate(Point::new(0, -ROW_MARGIN / 2))
-        .draw(display)?;
-
-    let title = Title::new("Lisbon", Day::Thursday, "Oct 10");
-
-    title_row(&title)
-        .align_to(&display.bounding_box(), horizontal::Center, vertical::Top)
-        .translate(Point::new(0, ROW_MARGIN))
-        .draw(display)?;
-
-    let details = Details::new(&Conditions {
-        sunrise: 1_791_887_344,
-        sunset: 1_791_828_203,
-        timezone_offset: 3_600,
-        wind_kmh: 23.8,
-        humidity: 59,
-        pressure_hpa: 1019.3,
-        uvi: 4.9,
-        dew_point_c: 12.6,
-        rain_chance: 0.33,
-    });
-
-    details_grid(&details)
-        .align_to(&display.bounding_box(), horizontal::Right, vertical::Center)
-        .translate(Point::new(-ROW_MARGIN, -60))
-        .draw(display)?;
-
-    let today = Today::new(
-        LargeWeatherIcon::PartlyCloudy(size96px::weather::CloudSunny::new(primary)),
-        20.7,
-        19.9,
-    );
-
-    today_widget(&today)
-        .align_to(&display.bounding_box(), horizontal::Left, vertical::Center)
-        .translate(Point::new(ROW_MARGIN, -60))
         .draw(display)?;
 
     Ok(())

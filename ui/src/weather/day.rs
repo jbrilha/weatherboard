@@ -63,9 +63,9 @@ impl Day {
 fn day_widget(forecast: &Forecast) -> impl Widget {
     let text_style = MonoTextStyle::new(&PROFONT_10_POINT, TriColor::Red);
     let day = Text::new(forecast.week_day.as_short_str(), Point::zero(), text_style);
-    let temp = Text::new(&forecast.temp_txt, Point::zero(), text_style);
-
     let img = Image::new(&forecast.icon, Point::zero());
+
+    let temp = Text::new(&forecast.temperature_str, Point::zero(), text_style);
 
     let content = LinearLayout::vertical(Chain::new(day).append(img).append(temp))
         .with_alignment(horizontal::Center)
