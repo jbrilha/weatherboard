@@ -1,44 +1,23 @@
-use core::fmt;
-
 use enum_iterator::Sequence;
 
 use embedded_graphics::{
-    image::{Image, ImageDrawable},
+    image::Image,
     mono_font::MonoTextStyle,
     prelude::*,
-    primitives::{
-        Circle, Line, Polyline, Primitive, PrimitiveStyle, Rectangle, RoundedRectangle,
-        StyledDrawable,
-    },
-    text::{Alignment, Text},
-};
-use embedded_iconoir::{
-    icons::{size48px::weather, size96px},
-    prelude::IconoirNewIcon,
+    primitives::{Primitive, PrimitiveStyle, RoundedRectangle},
+    text::Text,
 };
 use embedded_layout::{
     View,
-    align::{Align, horizontal, vertical},
+    align::{horizontal, vertical},
     layout::linear::{FixedMargin, LinearLayout},
     object_chain::Chain,
 };
-use enum_iterator::next_cycle;
-use profont::{
-    PROFONT_7_POINT, PROFONT_9_POINT, PROFONT_10_POINT, PROFONT_12_POINT, PROFONT_14_POINT,
-    PROFONT_24_POINT,
-};
-use rand::{RngExt, SeedableRng, rngs::SmallRng};
+use profont::PROFONT_10_POINT;
 use strum::EnumString;
 pub use weact_studio_epd::TriColor;
 
-use crate::{
-    Widget,
-    chart::{Chart, chart_widget},
-    details::{Conditions, Details, details_grid},
-    forecast::Forecast,
-    today::{Today, today_widget},
-    weather_icon::{LargeWeatherIcon, WeatherIcon},
-};
+use crate::{Widget, forecast::Forecast};
 
 const ROW_MARGIN: i32 = 10;
 
@@ -53,20 +32,6 @@ pub enum Day {
     Friday,
     Saturday,
 }
-//
-// impl fmt::Display for Day {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         match self {
-//             Day::Sunday => write!(f, "Sunday"),
-//             Day::Monday => write!(f, "Monday"),
-//             Day::Tuesday => write!(f, "Tuesday"),
-//             Day::Wednesday => write!(f, "Wednesday"),
-//             Day::Thursday => write!(f, "Thursday"),
-//             Day::Friday => write!(f, "Friday"),
-//             Day::Saturday => write!(f, "Saturday"),
-//         }
-//     }
-// }
 
 impl Day {
     pub fn as_str(&self) -> &'static str {

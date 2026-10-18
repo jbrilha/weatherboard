@@ -36,8 +36,6 @@ pub fn title_row(title: &Title) -> impl Widget {
     let divider = Line::new(Point::zero(), Point::new(0, 14))
         .into_styled(PrimitiveStyle::with_stroke(TriColor::Red, 1));
 
-    info!("day: {}", title.week_day);
-
     LinearLayout::horizontal(
         Chain::new(Text::new(title.location.as_str(), Point::zero(), style))
             // .append(separator())

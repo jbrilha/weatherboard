@@ -12,14 +12,10 @@ mod today;
 mod weather_icon;
 
 use embedded_graphics::{
-    image::{Image, ImageDrawable},
     mono_font::MonoTextStyle,
     prelude::*,
-    primitives::{
-        Circle, Line, Polyline, Primitive, PrimitiveStyle, Rectangle, RoundedRectangle,
-        StyledDrawable,
-    },
-    text::{Alignment, Text},
+    primitives::{Circle, Line, Primitive, PrimitiveStyle, Rectangle},
+    text::Text,
 };
 use embedded_iconoir::{
     icons::{size48px::weather, size96px},
@@ -28,14 +24,9 @@ use embedded_iconoir::{
 use embedded_layout::{
     View,
     align::{Align, horizontal, vertical},
-    layout::linear::{FixedMargin, LinearLayout},
-    object_chain::Chain,
 };
 use enum_iterator::next_cycle;
-use profont::{
-    PROFONT_7_POINT, PROFONT_9_POINT, PROFONT_10_POINT, PROFONT_12_POINT, PROFONT_14_POINT,
-    PROFONT_24_POINT,
-};
+use profont::PROFONT_14_POINT;
 use rand::{RngExt, SeedableRng, rngs::SmallRng};
 pub use weact_studio_epd::TriColor;
 
@@ -46,7 +37,6 @@ use crate::{
         week_widget,
     },
     details::{Conditions, Details, details_grid},
-    forecast::Forecast,
     title::{Title, title_row},
     today::{Today, today_widget},
     weather_icon::{LargeWeatherIcon, WeatherIcon},
