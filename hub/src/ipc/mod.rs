@@ -5,7 +5,8 @@ use common::weather::WeatherPayload;
 use futures::SinkExt;
 use futures::stream::StreamExt;
 use tokio::net::UnixStream;
-use tokio_util::bytes::Bytes;
+use tokio::sync::watch;
+use tokio_util::bytes::{Bytes, BytesMut};
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
 use tracing::{info, warn};
 
@@ -15,28 +16,42 @@ type FramedSock = Framed<UnixStream, LengthDelimitedCodec>;
 
 pub struct IpcService {
     socket: Option<FramedSock>,
+    latest: watch::Sender<Option<WeatherPayload>>,
 }
 
 impl IpcService {
-    pub fn new(socket: FramedSock) -> Self {
+    pub fn new(socket: FramedSock, latest: watch::Sender<Option<WeatherPayload>>) -> Self {
         Self {
             socket: Some(socket),
+            latest,
         }
     }
 
-    pub async fn default() -> Self {
+    pub async fn default(latest: watch::Sender<Option<WeatherPayload>>) -> Self {
         let socket = try_connect().await;
-        Self { socket }
+        Self { socket, latest }
     }
 
     pub async fn run(mut self) -> anyhow::Result<()> {
         loop {
             match self.socket {
                 Some(ref mut socket) => {
-                    socket.send(Bytes::from_static(b"ping")).await?;
-                    if let Some(frame) = socket.next().await {
-                        let p = WeatherPayload::decode(&frame?);
-                        println!("got {:?}", p);
+                    match request(socket).await {
+                        Ok(frame) => match WeatherPayload::decode(&frame) {
+                            Ok(payload) => {
+                                self.latest.send_if_modified(|current| {
+                                    let changed = *current != Some(payload);
+                                    *current = Some(payload);
+                                    changed
+                                });
+                            }
+                            Err(e) => warn!("payload rejected: {e:?}"),
+                        },
+                        Err(e) => {
+                            warn!("lost server connection: {e:#}");
+                            self.socket = None;
+                            continue;
+                        }
                     }
                     tokio::time::sleep(Duration::from_secs(10)).await;
                 }
@@ -51,6 +66,15 @@ impl IpcService {
             }
         }
     }
+}
+
+async fn request(socket: &mut FramedSock) -> anyhow::Result<BytesMut> {
+    socket.send(Bytes::from_static(b"ping")).await?;
+    let frame = socket
+        .next()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("server closed the socket"))??;
+    Ok(frame)
 }
 
 async fn try_connect() -> Option<FramedSock> {

@@ -12,19 +12,53 @@ use common::weather::WeatherPayload;
 use common::{MAX_PAYLOAD_LEN, display_service_uuid, weather_payload_uuid};
 use futures::stream::StreamExt;
 use std::time::Duration;
+use tokio::sync::watch;
 
 use crate::ipc::IpcService;
+
+const RECONNECT_DELAY: Duration = Duration::from_secs(5);
 
 async fn get_central(manager: &Manager) -> Adapter {
     let adapters = manager.adapters().await.unwrap();
     adapters.into_iter().next().unwrap()
 }
 
+async fn forward(
+    peripheral: &impl Peripheral,
+    latest: &mut watch::Receiver<Option<WeatherPayload>>,
+) -> anyhow::Result<()> {
+    peripheral.connect().await?;
+    println!("Connected");
+
+    peripheral.discover_services().await?;
+    let ch = peripheral
+        .characteristics()
+        .into_iter()
+        .find(|c| c.uuid == weather_payload_uuid())
+        .ok_or(anyhow::anyhow!("payload characteristic not found"))?;
+
+    let mut buf = [0u8; MAX_PAYLOAD_LEN];
+    latest.mark_changed();
+
+    loop {
+        latest.changed().await?;
+        let Some(payload) = *latest.borrow_and_update() else {
+            continue;
+        };
+        let bytes = payload.encode(&mut buf)?;
+        peripheral
+            .write(&ch, bytes, WriteType::WithResponse)
+            .await?;
+        println!("Sent payload ({} bytes)", bytes.len());
+    }
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
-    let ipc = IpcService::default().await;
+    let (tx, mut latest) = watch::channel(None);
+    let ipc = IpcService::default(tx).await;
     tokio::spawn(ipc.run());
     println!("ipc");
 
@@ -63,27 +97,13 @@ async fn main() -> anyhow::Result<()> {
                 println!("DeviceDiscovered: {:?} {}", id, name);
 
                 central.stop_scan().await?;
-                peripheral.connect().await?;
-                println!("Connected");
-                peripheral.discover_services().await?;
-                let ch = peripheral
-                    .characteristics()
-                    .into_iter()
-                    .find(|c| c.uuid == weather_payload_uuid())
-                    .ok_or(anyhow::anyhow!("payload characteristic not found"))?;
-
-                let mut buf = [0u8; MAX_PAYLOAD_LEN];
-                for counter in 0..5 {
-                    let bytes = WeatherPayload::default().encode(&mut buf)?;
-                    peripheral
-                        .write(&ch, bytes, WriteType::WithResponse)
-                        .await?;
-                    println!("Sent counter {counter} ({} bytes)", bytes.len());
-                    tokio::time::sleep(Duration::from_secs(15)).await;
+                loop {
+                    if let Err(e) = forward(&peripheral, &mut latest).await {
+                        println!("board link lost: {e:#}");
+                        peripheral.disconnect().await.ok();
+                        tokio::time::sleep(RECONNECT_DELAY).await;
+                    }
                 }
-
-                peripheral.disconnect().await?;
-                return Ok(());
             }
             CentralEvent::StateUpdate(state) => {
                 println!("AdapterStatusUpdate {:?}", state);
