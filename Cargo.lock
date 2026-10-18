@@ -2309,6 +2309,7 @@ dependencies = [
  "askama",
  "axum",
  "common",
+ "enum-iterator",
  "futures",
  "jiff",
  "reqwest",

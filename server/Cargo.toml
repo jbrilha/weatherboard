@@ -8,6 +8,7 @@ anyhow.workspace = true
 askama = "0.14.0"
 axum = "0.8.9"
 common.workspace = true
+enum-iterator.workspace = true
 jiff.workspace = true
 reqwest.workspace = true
 serde = { workspace = true, features = ["std"] }
