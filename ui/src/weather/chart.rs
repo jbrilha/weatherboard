@@ -32,44 +32,35 @@ const fn hour_x(i: i32) -> i32 {
     X_LINE_MIN + i * X_LINE_STEP
 }
 
-const TEMP_POINTS: [Point; 12] = [
-    Point::new(hour_x(0), Y_LINE_BOT),
-    Point::new(hour_x(1), Y_LINE_TOP),
-    Point::new(hour_x(2), Y_LINE_BOT),
-    Point::new(hour_x(3), Y_LINE_TOP),
-    Point::new(hour_x(4), Y_LINE_BOT),
-    Point::new(hour_x(5), Y_LINE_TOP),
-    Point::new(hour_x(6), Y_LINE_BOT),
-    Point::new(hour_x(7), Y_LINE_TOP),
-    Point::new(hour_x(8), Y_LINE_BOT),
-    Point::new(hour_x(9), Y_LINE_TOP),
-    Point::new(hour_x(10), Y_LINE_BOT),
-    Point::new(hour_x(11), Y_LINE_TOP),
-];
+fn temp_y(temp: i8, low: i8, high: i8) -> i32 {
+    let span = (i32::from(high) - i32::from(low)).max(1);
+    Y_LINE_BOT - (i32::from(temp) - i32::from(low)) * (Y_LINE_BOT - Y_LINE_TOP) / span
+}
 
-const POP_POINTS: [Point; 12] = [
-    Point::new(hour_x(0), Y_LINE_TOP),
-    Point::new(hour_x(1), Y_LINE_BOT),
-    Point::new(hour_x(2), Y_LINE_TOP),
-    Point::new(hour_x(3), Y_LINE_BOT),
-    Point::new(hour_x(4), Y_LINE_TOP),
-    Point::new(hour_x(5), Y_LINE_BOT),
-    Point::new(hour_x(6), Y_LINE_TOP),
-    Point::new(hour_x(7), Y_LINE_BOT),
-    Point::new(hour_x(8), Y_LINE_TOP),
-    Point::new(hour_x(9), Y_LINE_BOT),
-    Point::new(hour_x(10), Y_LINE_TOP),
-    Point::new(hour_x(11), Y_LINE_BOT),
-];
+fn pop_y(pct: u8) -> i32 {
+    Y_LINE_BOT - i32::from(pct) * (Y_LINE_BOT - Y_LINE_TOP) / 100
+}
+
+fn points(ys: [i32; 12]) -> [Point; 12] {
+    core::array::from_fn(|i| Point::new(hour_x(i as i32), ys[i]))
+}
 
 pub struct Chart {
     pub temp_high_txt: String<4>,
     pub temp_low_txt: String<4>,
     pub hour_txt: [String<4>; 12],
+    pub temp_points: [Point; 12],
+    pub pop_points: [Point; 12],
 }
 
 impl Chart {
-    pub fn new(temp_low: i8, temp_high: i8, hours: [u8; 12]) -> Self {
+    pub fn new(
+        temp_low: i8,
+        temp_high: i8,
+        hours: [u8; 12],
+        temps_c: [i8; 12],
+        pop_pct: [u8; 12],
+    ) -> Self {
         let mut temp_high_txt = String::new();
         write!(temp_high_txt, "{temp_high}°").unwrap();
 
@@ -80,6 +71,8 @@ impl Chart {
             temp_high_txt,
             temp_low_txt,
             hour_txt: hours.map(hour_label),
+            temp_points: points(temps_c.map(|t| temp_y(t, temp_low, temp_high))),
+            pop_points: points(pop_pct.map(pop_y)),
         }
     }
 }
@@ -115,8 +108,8 @@ pub fn chart_widget(chart: &Chart) -> impl Widget {
         .with_spacing(FixedMargin(HIGH_LOW_SPACING))
         .arrange();
 
-    let lines = Chain::new(chart_line(&TEMP_POINTS, TriColor::Red))
-        .append(chart_line(&POP_POINTS, TriColor::Black));
+    let lines = Chain::new(chart_line(&chart.temp_points, TriColor::Red))
+        .append(chart_line(&chart.pop_points, TriColor::Black));
     let lines_origin = lines.bounds().top_left;
 
     let row = LinearLayout::horizontal(Chain::new(temp).append(lines).append(pop))
