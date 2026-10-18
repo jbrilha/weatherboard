@@ -221,8 +221,10 @@ name = "common"
 version = "0.1.0"
 dependencies = [
  "defmt 1.1.1",
+ "enum-iterator",
  "postcard",
  "serde",
+ "strum",
  "uuid",
 ]
 
@@ -1878,6 +1880,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
 name = "ui"
 version = "0.1.0"
 dependencies = [
+ "common",
  "defmt 1.1.1",
  "embedded-graphics",
  "embedded-iconoir",
@@ -1887,7 +1890,6 @@ dependencies = [
  "log",
  "profont",
  "rand",
- "strum",
  "weact-studio-epd",
 ]
 

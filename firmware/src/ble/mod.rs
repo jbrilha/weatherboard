@@ -1,6 +1,7 @@
 // embassy stm32wba65 ble_gatt_server example
 
-use common::{MAX_PAYLOAD_LEN, Payload};
+use common::MAX_PAYLOAD_LEN;
+use common::weather::WeatherPayload;
 use defmt::{Display2Format, debug, error, info, warn};
 use embassy_executor::Spawner;
 use embassy_stm32_wpan::bluetooth::gap::types::OwnAddressType;
@@ -24,7 +25,7 @@ const ADDR_TYPE: OwnAddressType = OwnAddressType::Random;
 const TX_POWER: u8 = 30;
 const DEVICE_NAME: &str = "wboard";
 
-pub static PAYLOAD: Signal<CriticalSectionRawMutex, Payload> = Signal::new();
+pub static WEATHER: Signal<CriticalSectionRawMutex, WeatherPayload> = Signal::new();
 
 /// BLE runner task - drives the BLE stack sequencer
 #[embassy_executor::task]
@@ -215,10 +216,10 @@ async fn ble_task(mut ble: HCI<'static, Normal>) {
                 }
                 // Check if this is a characteristic value write
                 else if is_value_handle(state.data_char_handle.0, attribute.attr_handle.0) {
-                    match Payload::decode(attribute.data()) {
+                    match WeatherPayload::decode(attribute.data()) {
                         Ok(payload) => {
                             info!("Payload received: {}", payload);
-                            PAYLOAD.signal(payload);
+                            WEATHER.signal(payload);
                         }
                         Err(e) => warn!("Payload rejected: {} (raw {:?})", e, attribute.data()),
                     }

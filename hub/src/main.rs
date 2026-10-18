@@ -8,7 +8,8 @@ use btleplug::api::{
     Central, CentralEvent, Manager as _, Peripheral, ScanFilter, bleuuid::BleUuid,
 };
 use btleplug::platform::{Adapter, Manager};
-use common::{MAX_PAYLOAD_LEN, Payload, display_service_uuid, weather_payload_uuid};
+use common::weather::WeatherPayload;
+use common::{MAX_PAYLOAD_LEN, display_service_uuid, weather_payload_uuid};
 use futures::stream::StreamExt;
 use std::time::Duration;
 
@@ -73,7 +74,7 @@ async fn main() -> anyhow::Result<()> {
 
                 let mut buf = [0u8; MAX_PAYLOAD_LEN];
                 for counter in 0..5 {
-                    let bytes = Payload::new(counter).encode(&mut buf)?;
+                    let bytes = WeatherPayload::default().encode(&mut buf)?;
                     peripheral
                         .write(&ch, bytes, WriteType::WithResponse)
                         .await?;

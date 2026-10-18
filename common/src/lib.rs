@@ -1,6 +1,7 @@
 #![no_std]
 
 pub mod ipc;
+pub mod weather;
 
 use serde::{Deserialize, Serialize};
 pub use uuid::Uuid;
@@ -11,7 +12,7 @@ pub const TEST_LEN: usize = 32;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct Payload {
+pub struct TestPayload {
     pub version: u8,
     pub counter: u32,
     pub fluff: [u64; TEST_LEN],
@@ -24,7 +25,7 @@ pub enum DecodeError {
     UnsupportedVersion(u8),
 }
 
-impl Payload {
+impl TestPayload {
     pub fn new(_counter: u32) -> Self {
         let buf = [0u8; TEST_LEN];
         let mut i = 0;

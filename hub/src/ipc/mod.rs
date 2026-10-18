@@ -1,6 +1,7 @@
 use std::time::Duration;
 
-use common::{Payload, ipc::HUB_SOCKET};
+use common::ipc::HUB_SOCKET;
+use common::weather::WeatherPayload;
 use futures::SinkExt;
 use futures::stream::StreamExt;
 use tokio::net::UnixStream;
@@ -34,7 +35,7 @@ impl IpcService {
                 Some(ref mut socket) => {
                     socket.send(Bytes::from_static(b"ping")).await?;
                     if let Some(frame) = socket.next().await {
-                        let p = Payload::decode(&frame?);
+                        let p = WeatherPayload::decode(&frame?);
                         println!("got {:?}", p);
                     }
                     tokio::time::sleep(Duration::from_secs(10)).await;

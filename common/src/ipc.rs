@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::Payload;
+use crate::TestPayload;
 
 pub const HUB_SOCKET: &str = "/tmp/weatherboard.sock";
 
@@ -17,6 +17,6 @@ pub enum ToServer {
 
 #[derive(Serialize, Deserialize)]
 pub enum ToHub {
-    Weather(Payload),
+    Weather(TestPayload),
     Config(Config),
 }

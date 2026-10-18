@@ -5,7 +5,6 @@ mod board;
 pub mod epd;
 pub mod imu;
 pub mod spi_utils;
-pub mod state_machine;
 mod tasks;
 pub mod utils;
 

@@ -1,14 +1,11 @@
 pub mod client;
-pub mod locations;
 pub mod openweathermap;
 pub mod service;
 
+use common::weather::Location;
 use serde::{Deserialize, Serialize};
 
-use crate::weather::{
-    locations::Location,
-    openweathermap::{OpenCallEndpoint, Units},
-};
+use crate::weather::openweathermap::{OpenCallEndpoint, Units};
 
 #[derive(Serialize, Deserialize)]
 pub struct Ip {

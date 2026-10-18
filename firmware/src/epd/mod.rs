@@ -1,4 +1,4 @@
-use common::Payload;
+use common::weather::WeatherPayload;
 use core::fmt::Write;
 use defmt::{Format, error, info};
 use display_interface_spi::SPIInterface;
@@ -19,9 +19,10 @@ use embedded_graphics::{
 };
 use embedded_hal_bus::spi::ExclusiveDevice;
 use heapless::String;
+use ui::weather::WeatherInfo;
 use weact_studio_epd::{TriColor, WeActStudio420TriColorDriver, graphics::Display420TriColor};
 
-use crate::ble::PAYLOAD;
+use crate::ble::WEATHER;
 pub use crate::board::EpdPeripherals;
 use crate::board::Irqs;
 use crate::spi_utils::SpiDev;
@@ -109,10 +110,27 @@ pub async fn epd_task(mut epd: Epd) {
     }
     info!("epd ready");
 
-    ui::weather::dashboard(&mut epd.display).unwrap();
+    let mut current: Option<WeatherPayload> = None;
+    ui::weather::dashboard(&mut epd.display, &WeatherInfo::default()).unwrap();
 
-    epd.flush().await.unwrap();
-    epd.sleep().await.unwrap();
+    loop {
+        match current {
+            Some(payload) => {
+                let info = WeatherInfo::from(&payload);
+                ui::weather::dashboard(&mut epd.display, &info).unwrap();
+            }
+            None => {}
+        }
+
+        epd.flush().await.unwrap();
+        epd.sleep().await.unwrap();
+
+        if let Either::First(payload) = select(WEATHER.wait(), Timer::after_secs(15 * 60)).await {
+            current = Some(payload);
+        }
+
+        epd.wake_up().await.unwrap();
+    }
 }
 
 #[embassy_executor::task]
@@ -123,14 +141,14 @@ pub async fn epd_ble_task(mut epd: Epd) {
     }
     info!("epd ready");
     let style = MonoTextStyle::new(&FONT_10X20, TriColor::Black);
-    let mut current: Option<Payload> = None;
+    let mut current: Option<WeatherPayload> = None;
     loop {
         let mut counter: String<16> = String::new();
         let mut version: String<16> = String::new();
         match current {
             Some(payload) => {
-                write!(counter, "counter: {}", payload.counter).unwrap();
-                write!(version, "version: {}", payload.version).unwrap();
+                write!(counter, "counter: {}", payload.temp_c).unwrap();
+                write!(version, "version: {}", payload.uvi_tenths).unwrap();
             }
             None => {
                 write!(counter, "waiting for hub").unwrap();
@@ -149,7 +167,7 @@ pub async fn epd_ble_task(mut epd: Epd) {
         epd.flush().await.unwrap();
         epd.sleep().await.unwrap();
 
-        if let Either::First(payload) = select(PAYLOAD.wait(), Timer::after_secs(15 * 60)).await {
+        if let Either::First(payload) = select(WEATHER.wait(), Timer::after_secs(15 * 60)).await {
             current = Some(payload);
         }
         epd.wake_up().await.unwrap();
@@ -165,5 +183,5 @@ fn draw_test_pattern(display: &mut Display420TriColor, refresh: Refresh, round: 
 }
 
 fn draw_weather_dashboaard(display: &mut Display420TriColor) {
-    ui::weather::dashboard(display).unwrap();
+    ui::weather::dashboard(display, &WeatherInfo::default()).unwrap();
 }

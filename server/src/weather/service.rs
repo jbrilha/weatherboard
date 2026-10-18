@@ -3,11 +3,11 @@ use std::{
     time::Duration,
 };
 
+use common::weather::Location;
 use tokio::sync::watch;
 
 use crate::weather::{
     WeatherParams,
-    locations::Location,
     openweathermap::{Forecast1Day, OpenCallEndpoint, Units},
 };
 
