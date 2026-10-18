@@ -33,7 +33,7 @@ const DETAIL_SPACING: i32 = 10;
 
 pub struct Detail<I: IconoirIcon> {
     pub icon: Icon<TriColor, I>,
-    pub text: String<12>,
+    pub text: String<8>,
 }
 
 impl<I: IconoirIcon + IconoirNewIcon<TriColor>> Detail<I> {
@@ -47,10 +47,21 @@ impl<I: IconoirIcon + IconoirNewIcon<TriColor>> Detail<I> {
     }
 }
 
+pub struct HoursMinutes {
+    pub hours: u8,
+    pub minutes: u8,
+}
+
+impl HoursMinutes {
+    pub fn new(hours: u8, minutes: u8) -> Self {
+        Self { hours, minutes }
+    }
+}
+
 pub struct Conditions {
-    pub sunrise: i64,
-    pub sunset: i64,
-    pub timezone_offset: i32,
+    pub sunrise: HoursMinutes,
+    pub sunset: HoursMinutes,
+    // pub timezone_offset: i32,
     pub wind_kmh: f32,
     pub humidity: u8,
     pub pressure_hpa: f32,
@@ -70,15 +81,17 @@ pub struct Details {
     pub rain_chance: Detail<UmbrellaFull>,
 }
 
-fn hour_minute(unix: i64, timezone_offset: i32) -> (i64, i64) {
+fn hour_minute(unix: i64, timezone_offset: i32) -> (u8, u8) {
     let secs = (unix + i64::from(timezone_offset)).rem_euclid(86_400);
-    (secs / 3_600, secs % 3_600 / 60)
+    ((secs / 3_600) as u8, (secs % 3_600 / 60) as u8)
 }
 
 impl Details {
     pub fn new(c: &Conditions) -> Self {
-        let (rise_h, rise_m) = hour_minute(c.sunrise, c.timezone_offset);
-        let (set_h, set_m) = hour_minute(c.sunset, c.timezone_offset);
+        // let (rise_h, rise_m) = hour_minute(c.sunrise, c.timezone_offset);
+        // let (set_h, set_m) = hour_minute(c.sunset, c.timezone_offset);
+        let (rise_h, rise_m) = (c.sunrise.hours, c.sunrise.minutes);
+        let (set_h, set_m) = (c.sunset.hours, c.sunset.minutes);
 
         Self {
             sunrise: Detail::new(format_args!("{rise_h:02}:{rise_m:02}")),

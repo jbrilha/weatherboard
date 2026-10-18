@@ -28,7 +28,7 @@ use crate::weather::{
         Day::{self},
         week_widget,
     },
-    details::{Conditions, Details, details_grid},
+    details::{Conditions, Details, HoursMinutes, details_grid},
     forecast::Forecast,
     title::{Title, title_row},
     today::{Today, today_widget},
@@ -73,9 +73,11 @@ impl WeatherInfo {
             19.9,
         );
         let details = Details::new(&Conditions {
-            sunrise: 1_791_887_344,
-            sunset: 1_791_828_203,
-            timezone_offset: 3_600,
+            sunrise: HoursMinutes::new(7, 15),
+            sunset: HoursMinutes::new(18, 55),
+            // sunrise: 1_791_887_344,
+            // sunset: 1_791_828_203,
+            // timezone_offset: 3_600,
             wind_kmh: 23.8,
             humidity: 59,
             pressure_hpa: 1019.3,
@@ -83,7 +85,11 @@ impl WeatherInfo {
             dew_point_c: 12.6,
             rain_chance: 0.33,
         });
-        let chart = Chart::new(core::array::from_fn(|i| ((HOUR0 + 2 * i) % 24) as u8));
+        let chart = Chart::new(
+            19,
+            36,
+            core::array::from_fn(|i| ((HOUR0 + 2 * i) % 24) as u8),
+        );
 
         let mut rng = SmallRng::seed_from_u64(12);
         let weekly_forecast = [

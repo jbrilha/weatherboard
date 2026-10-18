@@ -25,6 +25,9 @@ const Y_LINE_BOT: i32 = 190;
 
 const HIGH_LOW_SPACING: i32 = 20;
 
+const PCT_100: &str = "100%";
+const PCT_0: &str = "0%";
+
 const fn hour_x(i: i32) -> i32 {
     X_LINE_MIN + i * X_LINE_STEP
 }
@@ -60,12 +63,22 @@ const POP_POINTS: [Point; 12] = [
 ];
 
 pub struct Chart {
+    pub temp_high_txt: String<4>,
+    pub temp_low_txt: String<4>,
     pub hour_txt: [String<4>; 12],
 }
 
 impl Chart {
-    pub fn new(hours: [u8; 12]) -> Self {
+    pub fn new(temp_low: i8, temp_high: i8, hours: [u8; 12]) -> Self {
+        let mut temp_high_txt = String::new();
+        write!(temp_high_txt, "{temp_high}°").unwrap();
+
+        let mut temp_low_txt = String::new();
+        write!(temp_low_txt, "{temp_low}°").unwrap();
+
         Self {
+            temp_high_txt,
+            temp_low_txt,
             hour_txt: hours.map(hour_label),
         }
     }
@@ -85,12 +98,12 @@ fn hour_label(hour: u8) -> String<4> {
 
 pub fn chart_widget(chart: &Chart) -> impl Widget {
     let temp_style = MonoTextStyle::new(&PROFONT_9_POINT, TriColor::Red);
-    let high_temp = Text::new("36°", Point::zero(), temp_style);
-    let low_temp = Text::new("9°", Point::zero(), temp_style);
+    let high_temp = Text::new(&chart.temp_high_txt, Point::zero(), temp_style);
+    let low_temp = Text::new(&chart.temp_low_txt, Point::zero(), temp_style);
 
     let pop_style = MonoTextStyle::new(&PROFONT_9_POINT, TriColor::Black);
-    let high_pop = Text::new("100%", Point::zero(), pop_style);
-    let low_pop = Text::new("0%", Point::zero(), pop_style);
+    let high_pop = Text::new(PCT_100, Point::zero(), pop_style);
+    let low_pop = Text::new(PCT_0, Point::zero(), pop_style);
 
     let temp = LinearLayout::vertical(Chain::new(high_temp).append(low_temp))
         .with_alignment(horizontal::Center)
