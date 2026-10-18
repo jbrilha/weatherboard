@@ -3,12 +3,13 @@
 #[macro_use]
 mod fmt;
 
-pub mod chart;
-pub mod day;
-pub mod details;
-pub mod forecast;
-pub mod today;
-pub mod weather_icon;
+mod chart;
+mod day;
+mod details;
+mod forecast;
+mod title;
+mod today;
+mod weather_icon;
 
 use embedded_graphics::{
     image::{Image, ImageDrawable},
@@ -39,119 +40,22 @@ use rand::{RngExt, SeedableRng, rngs::SmallRng};
 pub use weact_studio_epd::TriColor;
 
 use crate::{
-    chart::Chart,
-    day::Day::{self},
-    details::{Conditions, Details},
+    chart::{Chart, chart_widget},
+    day::{
+        Day::{self},
+        week_widget,
+    },
+    details::{Conditions, Details, details_grid},
     forecast::Forecast,
-    today::Today,
+    title::{Title, title_row},
+    today::{Today, today_widget},
     weather_icon::{LargeWeatherIcon, WeatherIcon},
 };
 
 const ROW_MARGIN: i32 = 10;
-const TODAY_SPACING: i32 = 15;
-const DETAIL_SPACING: i32 = 10;
-const HIGH_LOW_SPACING: i32 = 20;
 
 pub trait Widget: View + Drawable<Color = TriColor> {}
 impl<T: View + Drawable<Color = TriColor>> Widget for T {}
-
-pub fn test_pattern<D>(display: &mut D, label: &str, round: u32) -> Result<(), D::Error>
-where
-    D: DrawTarget<Color = TriColor>,
-{
-    display.clear(TriColor::White)?;
-
-    let (primary, secondary) = if round % 2 == 0 {
-        (TriColor::Black, TriColor::Red)
-    } else {
-        (TriColor::Red, TriColor::Black)
-    };
-
-    Text::new(
-        label,
-        Point::new(10, 24),
-        MonoTextStyle::new(&PROFONT_14_POINT, primary),
-    )
-    .draw(display)?;
-    Text::new(
-        "black red white",
-        Point::new(10, 48),
-        MonoTextStyle::new(&PROFONT_14_POINT, secondary),
-    )
-    .draw(display)?;
-
-    let swatches = [TriColor::Black, TriColor::Red, TriColor::White];
-    for (i, color) in swatches.into_iter().enumerate() {
-        let top_left = Point::new(10 + i as i32 * 130, 64);
-        Rectangle::new(top_left, Size::new(120, 90))
-            .into_styled(PrimitiveStyle::with_fill(color))
-            .draw(display)?;
-        Rectangle::new(top_left, Size::new(120, 90))
-            .into_styled(PrimitiveStyle::with_stroke(TriColor::Black, 1))
-            .draw(display)?;
-    }
-
-    for i in 0..40 {
-        let x = 10 + i * 4;
-        let color = if i % 2 == 0 { primary } else { secondary };
-        Line::new(Point::new(x, 170), Point::new(x, 290))
-            .into_styled(PrimitiveStyle::with_stroke(color, 1))
-            .draw(display)?;
-    }
-
-    Circle::new(Point::new(190, 170), 120)
-        .into_styled(PrimitiveStyle::with_fill(secondary))
-        .draw(display)?;
-    Circle::new(Point::new(220, 200), 60)
-        .into_styled(PrimitiveStyle::with_fill(primary))
-        .draw(display)?;
-
-    Rectangle::new(Point::new(320, 170), Size::new(65, 120))
-        .into_styled(PrimitiveStyle::with_stroke(secondary, 3))
-        .draw(display)?;
-
-    Ok(())
-}
-
-const X_LINE_MIN: i32 = 30;
-const X_LINE_STEP: i32 = 31;
-const Y_LINE_TOP: i32 = 160;
-const Y_LINE_BOT: i32 = 190;
-
-const fn hour_x(i: i32) -> i32 {
-    X_LINE_MIN + i * X_LINE_STEP
-}
-
-const TEMP_POINTS: [Point; 12] = [
-    Point::new(hour_x(0), Y_LINE_BOT),
-    Point::new(hour_x(1), Y_LINE_TOP),
-    Point::new(hour_x(2), Y_LINE_BOT),
-    Point::new(hour_x(3), Y_LINE_TOP),
-    Point::new(hour_x(4), Y_LINE_BOT),
-    Point::new(hour_x(5), Y_LINE_TOP),
-    Point::new(hour_x(6), Y_LINE_BOT),
-    Point::new(hour_x(7), Y_LINE_TOP),
-    Point::new(hour_x(8), Y_LINE_BOT),
-    Point::new(hour_x(9), Y_LINE_TOP),
-    Point::new(hour_x(10), Y_LINE_BOT),
-    Point::new(hour_x(11), Y_LINE_TOP),
-];
-
-const POP_POINTS: [Point; 12] = [
-    Point::new(hour_x(0), Y_LINE_TOP),
-    Point::new(hour_x(1), Y_LINE_BOT),
-    Point::new(hour_x(2), Y_LINE_TOP),
-    Point::new(hour_x(3), Y_LINE_BOT),
-    Point::new(hour_x(4), Y_LINE_TOP),
-    Point::new(hour_x(5), Y_LINE_BOT),
-    Point::new(hour_x(6), Y_LINE_TOP),
-    Point::new(hour_x(7), Y_LINE_BOT),
-    Point::new(hour_x(8), Y_LINE_TOP),
-    Point::new(hour_x(9), Y_LINE_BOT),
-    Point::new(hour_x(10), Y_LINE_TOP),
-    Point::new(hour_x(11), Y_LINE_BOT),
-];
-
 const HOUR0: usize = 8;
 
 pub fn iconoir_test<D>(display: &mut D) -> Result<(), D::Error>
@@ -218,7 +122,9 @@ where
         .translate(Point::new(0, -ROW_MARGIN / 2))
         .draw(display)?;
 
-    title_row("Lisbon", "Thursday", "Oct 10")
+    let title = Title::new("Lisbon", Day::Thursday, "Oct 10");
+
+    title_row(&title)
         .align_to(&display.bounding_box(), horizontal::Center, vertical::Top)
         .translate(Point::new(0, ROW_MARGIN))
         .draw(display)?;
@@ -254,202 +160,60 @@ where
     Ok(())
 }
 
-fn today_widget(today: &Today) -> impl Widget {
-    let temp_style = MonoTextStyle::new(&PROFONT_24_POINT, TriColor::Red);
-    let feels_like_style = MonoTextStyle::new(&PROFONT_14_POINT, TriColor::Black);
-
-    let temps = LinearLayout::vertical(
-        Chain::new(Text::new(&today.temp_txt, Point::zero(), temp_style)).append(Text::new(
-            &today.feels_like_txt,
-            Point::zero(),
-            feels_like_style,
-        )),
-    )
-    .with_alignment(horizontal::Left)
-    .with_spacing(FixedMargin(TODAY_SPACING / 2))
-    .arrange();
-
-    let divider = Line::new(
-        Point::zero(),
-        Point::new(0, today.icon.size().height as i32),
-    )
-    .into_styled(PrimitiveStyle::with_stroke(TriColor::Black, 1));
-
-    LinearLayout::horizontal(
-        Chain::new(Image::new(&today.icon, Point::zero()))
-            .append(temps)
-            .append(divider),
-    )
-    .with_alignment(vertical::Center)
-    .with_spacing(FixedMargin(TODAY_SPACING))
-    .arrange()
-}
-
-fn chart_line(points: &[Point; 12], color: TriColor) -> impl Widget {
-    let line_style = PrimitiveStyle::with_stroke(color, 2);
-
-    Polyline::new(points).into_styled(line_style)
-}
-
-fn chart_widget(chart: &Chart) -> impl Widget {
-    let temp_style = MonoTextStyle::new(&PROFONT_9_POINT, TriColor::Red);
-    let high_temp = Text::new("36°", Point::zero(), temp_style);
-    let low_temp = Text::new("9°", Point::zero(), temp_style);
-
-    let pop_style = MonoTextStyle::new(&PROFONT_9_POINT, TriColor::Black);
-    let high_pop = Text::new("100%", Point::zero(), pop_style);
-    let low_pop = Text::new("0%", Point::zero(), pop_style);
-
-    let temp = LinearLayout::vertical(Chain::new(high_temp).append(low_temp))
-        .with_alignment(horizontal::Center)
-        .with_spacing(FixedMargin(HIGH_LOW_SPACING))
-        .arrange();
-
-    let pop = LinearLayout::vertical(Chain::new(high_pop).append(low_pop))
-        .with_alignment(horizontal::Center)
-        .with_spacing(FixedMargin(HIGH_LOW_SPACING))
-        .arrange();
-
-    let lines = Chain::new(chart_line(&TEMP_POINTS, TriColor::Red))
-        .append(chart_line(&POP_POINTS, TriColor::Black));
-    let lines_origin = lines.bounds().top_left;
-
-    let row = LinearLayout::horizontal(Chain::new(temp).append(lines).append(pop))
-        .with_alignment(vertical::Center)
-        .with_spacing(FixedMargin(4))
-        .arrange();
-
-    let lines_offset = row.inner().parent.object.bounds().top_left - lines_origin;
-
-    Chain::new(row).append(hour_labels(chart).translate(lines_offset))
-}
-
-fn hour_labels(chart: &Chart) -> impl Widget {
-    let style = MonoTextStyle::new(&PROFONT_7_POINT, TriColor::Black);
-    let label = |i: usize| {
-        Text::with_alignment(
-            &chart.hour_txt[i],
-            Point::new(hour_x(i as i32), Y_LINE_BOT + 12),
-            style,
-            Alignment::Center,
-        )
-    };
-
-    Chain::new(label(0))
-        .append(label(1))
-        .append(label(2))
-        .append(label(3))
-        .append(label(4))
-        .append(label(5))
-        .append(label(6))
-        .append(label(7))
-        .append(label(8))
-        .append(label(9))
-        .append(label(10))
-        .append(label(11))
-}
-
-fn details_grid(details: &Details) -> impl Widget {
-    let left = LinearLayout::vertical(
-        Chain::new(cell(&details.sunrise.icon, &details.sunrise.text))
-            .append(cell(&details.wind.icon, &details.wind.text))
-            .append(cell(&details.pressure.icon, &details.pressure.text))
-            .append(cell(&details.dew_point.icon, &details.dew_point.text)),
-    )
-    .with_alignment(horizontal::Left)
-    .with_spacing(FixedMargin(DETAIL_SPACING / 2))
-    .arrange();
-
-    let right = LinearLayout::vertical(
-        Chain::new(cell(&details.sunset.icon, &details.sunset.text))
-            .append(cell(&details.humidity.icon, &details.humidity.text))
-            .append(cell(&details.uvi.icon, &details.uvi.text))
-            .append(cell(&details.rain_chance.icon, &details.rain_chance.text)),
-    )
-    .with_alignment(horizontal::Left)
-    .with_spacing(FixedMargin(DETAIL_SPACING / 2))
-    .arrange();
-
-    LinearLayout::horizontal(Chain::new(left).append(right))
-        .with_alignment(vertical::Top)
-        .with_spacing(FixedMargin(DETAIL_SPACING))
-        .arrange()
-}
-
-fn border<D>(display: &mut D, color: TriColor) -> Result<(), D::Error>
+pub fn test_pattern<D>(display: &mut D, label: &str, round: u32) -> Result<(), D::Error>
 where
     D: DrawTarget<Color = TriColor>,
 {
-    display
-        .bounding_box()
-        .draw_styled(&PrimitiveStyle::with_stroke(color, 3), display)?;
+    display.clear(TriColor::White)?;
+
+    let (primary, secondary) = if round % 2 == 0 {
+        (TriColor::Black, TriColor::Red)
+    } else {
+        (TriColor::Red, TriColor::Black)
+    };
+
+    Text::new(
+        label,
+        Point::new(10, 24),
+        MonoTextStyle::new(&PROFONT_14_POINT, primary),
+    )
+    .draw(display)?;
+    Text::new(
+        "black red white",
+        Point::new(10, 48),
+        MonoTextStyle::new(&PROFONT_14_POINT, secondary),
+    )
+    .draw(display)?;
+
+    let swatches = [TriColor::Black, TriColor::Red, TriColor::White];
+    for (i, color) in swatches.into_iter().enumerate() {
+        let top_left = Point::new(10 + i as i32 * 130, 64);
+        Rectangle::new(top_left, Size::new(120, 90))
+            .into_styled(PrimitiveStyle::with_fill(color))
+            .draw(display)?;
+        Rectangle::new(top_left, Size::new(120, 90))
+            .into_styled(PrimitiveStyle::with_stroke(TriColor::Black, 1))
+            .draw(display)?;
+    }
+
+    for i in 0..40 {
+        let x = 10 + i * 4;
+        let color = if i % 2 == 0 { primary } else { secondary };
+        Line::new(Point::new(x, 170), Point::new(x, 290))
+            .into_styled(PrimitiveStyle::with_stroke(color, 1))
+            .draw(display)?;
+    }
+
+    Circle::new(Point::new(190, 170), 120)
+        .into_styled(PrimitiveStyle::with_fill(secondary))
+        .draw(display)?;
+    Circle::new(Point::new(220, 200), 60)
+        .into_styled(PrimitiveStyle::with_fill(primary))
+        .draw(display)?;
+
+    Rectangle::new(Point::new(320, 170), Size::new(65, 120))
+        .into_styled(PrimitiveStyle::with_stroke(secondary, 3))
+        .draw(display)?;
 
     Ok(())
-}
-
-fn title_row(location: &str, week_day: &str, date: &str) -> impl Widget {
-    let style = MonoTextStyle::new(&PROFONT_14_POINT, TriColor::Red);
-
-    let divider = Line::new(Point::zero(), Point::new(0, 14))
-        .into_styled(PrimitiveStyle::with_stroke(TriColor::Red, 1));
-
-    LinearLayout::horizontal(
-        Chain::new(Text::new(location, Point::zero(), style))
-            // .append(separator())
-            .append(divider)
-            .append(Text::new(week_day, Point::zero(), style))
-            // .append(separator())
-            .append(divider)
-            .append(Text::new(date, Point::zero(), style)),
-    )
-    .with_alignment(vertical::Center)
-    .with_spacing(FixedMargin(ROW_MARGIN))
-    .arrange()
-}
-
-fn cell<I: ImageDrawable<Color = TriColor>>(icon: &I, text: &str) -> impl Widget {
-    let style = MonoTextStyle::new(&PROFONT_12_POINT, TriColor::Black);
-
-    LinearLayout::horizontal(
-        Chain::new(Image::new(icon, Point::zero())).append(Text::new(text, Point::zero(), style)),
-    )
-    .with_alignment(vertical::Center)
-    .with_spacing(FixedMargin(ROW_MARGIN / 2))
-    .arrange()
-}
-
-fn day_widget(forecast: &Forecast) -> impl Widget {
-    let text_style = MonoTextStyle::new(&PROFONT_10_POINT, TriColor::Red);
-    let day = Text::new(forecast.week_day.as_short_str(), Point::zero(), text_style);
-    let temp = Text::new(&forecast.temp_txt, Point::zero(), text_style);
-
-    let img = Image::new(&forecast.icon, Point::zero());
-
-    let content = LinearLayout::vertical(Chain::new(day).append(img).append(temp))
-        .with_alignment(horizontal::Center)
-        .with_spacing(FixedMargin(ROW_MARGIN / 2))
-        .arrange()
-        .translate(Point::zero());
-
-    let frame = RoundedRectangle::with_equal_corners(content.bounds().offset(4), Size::new(6, 6))
-        .into_styled(PrimitiveStyle::with_stroke(TriColor::Black, 1));
-
-    Chain::new(frame).append(content)
-}
-
-// 6 because I want to show 'today' up top
-fn week_widget(forecasts: &[Forecast; 6]) -> impl Widget {
-    let widget = |i: usize| day_widget(&forecasts[i]);
-
-    LinearLayout::horizontal(
-        Chain::new(widget(0))
-            .append(widget(1))
-            .append(widget(2))
-            .append(widget(3))
-            .append(widget(4))
-            .append(widget(5)),
-    )
-    .with_alignment(vertical::Center)
-    .with_spacing(FixedMargin(ROW_MARGIN))
-    .arrange()
 }

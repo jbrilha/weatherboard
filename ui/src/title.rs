@@ -1,0 +1,53 @@
+use embedded_graphics::{
+    geometry::Point,
+    mono_font::MonoTextStyle,
+    primitives::{Line, Primitive, PrimitiveStyle},
+    text::Text,
+};
+use embedded_layout::{
+    align::vertical,
+    layout::linear::{FixedMargin, LinearLayout},
+    object_chain::Chain,
+};
+use heapless::String;
+use profont::PROFONT_14_POINT;
+use weact_studio_epd::TriColor;
+
+use crate::{ROW_MARGIN, Widget, day::Day};
+
+pub struct Title {
+    pub location: String<16>,
+    pub week_day: Day,
+    pub date: String<6>,
+}
+impl Title {
+    pub fn new(location: &str, week_day: Day, date: &str) -> Self {
+        Self {
+            location: String::try_from(location).unwrap(),
+            week_day,
+            date: String::try_from(date).unwrap(),
+        }
+    }
+}
+
+pub fn title_row(title: &Title) -> impl Widget {
+    let style = MonoTextStyle::new(&PROFONT_14_POINT, TriColor::Red);
+
+    let divider = Line::new(Point::zero(), Point::new(0, 14))
+        .into_styled(PrimitiveStyle::with_stroke(TriColor::Red, 1));
+
+    info!("day: {}", title.week_day);
+
+    LinearLayout::horizontal(
+        Chain::new(Text::new(title.location.as_str(), Point::zero(), style))
+            // .append(separator())
+            .append(divider)
+            .append(Text::new(title.week_day.as_str(), Point::zero(), style))
+            // .append(separator())
+            .append(divider)
+            .append(Text::new(title.date.as_str(), Point::zero(), style)),
+    )
+    .with_alignment(vertical::Center)
+    .with_spacing(FixedMargin(ROW_MARGIN))
+    .arrange()
+}

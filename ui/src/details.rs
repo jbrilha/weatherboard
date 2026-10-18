@@ -1,5 +1,11 @@
 use core::fmt::Write;
 
+use embedded_graphics::{
+    geometry::Point,
+    image::{Image, ImageDrawable},
+    mono_font::MonoTextStyle,
+    text::Text,
+};
 use embedded_iconoir::{
     Icon,
     prelude::{IconoirIcon, IconoirNewIcon},
@@ -11,8 +17,18 @@ use embedded_iconoir::{
         weather::{DewPoint, SunLight, Wind},
     },
 };
+use embedded_layout::{
+    align::{horizontal, vertical},
+    layout::linear::{FixedMargin, LinearLayout},
+    object_chain::Chain,
+};
 use heapless::String;
+use profont::PROFONT_12_POINT;
 use weact_studio_epd::TriColor;
+
+use crate::{ROW_MARGIN, Widget};
+
+const DETAIL_SPACING: i32 = 10;
 
 pub struct Detail<I: IconoirIcon> {
     pub icon: Icon<TriColor, I>,
@@ -74,4 +90,42 @@ impl Details {
             rain_chance: Detail::new(format_args!("{:.0}%", c.rain_chance * 100.0)),
         }
     }
+}
+
+pub fn details_grid(details: &Details) -> impl Widget {
+    let left = LinearLayout::vertical(
+        Chain::new(cell(&details.sunrise.icon, &details.sunrise.text))
+            .append(cell(&details.wind.icon, &details.wind.text))
+            .append(cell(&details.pressure.icon, &details.pressure.text))
+            .append(cell(&details.dew_point.icon, &details.dew_point.text)),
+    )
+    .with_alignment(horizontal::Left)
+    .with_spacing(FixedMargin(DETAIL_SPACING / 2))
+    .arrange();
+
+    let right = LinearLayout::vertical(
+        Chain::new(cell(&details.sunset.icon, &details.sunset.text))
+            .append(cell(&details.humidity.icon, &details.humidity.text))
+            .append(cell(&details.uvi.icon, &details.uvi.text))
+            .append(cell(&details.rain_chance.icon, &details.rain_chance.text)),
+    )
+    .with_alignment(horizontal::Left)
+    .with_spacing(FixedMargin(DETAIL_SPACING / 2))
+    .arrange();
+
+    LinearLayout::horizontal(Chain::new(left).append(right))
+        .with_alignment(vertical::Top)
+        .with_spacing(FixedMargin(DETAIL_SPACING))
+        .arrange()
+}
+
+fn cell<I: ImageDrawable<Color = TriColor>>(icon: &I, text: &str) -> impl Widget {
+    let style = MonoTextStyle::new(&PROFONT_12_POINT, TriColor::Black);
+
+    LinearLayout::horizontal(
+        Chain::new(Image::new(icon, Point::zero())).append(Text::new(text, Point::zero(), style)),
+    )
+    .with_alignment(vertical::Center)
+    .with_spacing(FixedMargin(ROW_MARGIN / 2))
+    .arrange()
 }
