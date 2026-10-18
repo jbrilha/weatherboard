@@ -23,8 +23,9 @@ async fn get_central(manager: &Manager) -> Adapter {
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
-    let ipc = IpcService::default().await?;
+    let ipc = IpcService::default().await;
     tokio::spawn(ipc.run());
+    println!("ipc");
 
     let manager = Manager::new().await?;
 

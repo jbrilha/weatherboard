@@ -1,3 +1,5 @@
+export RUST_LOG := "info"
+
 default:
     just --list
 
@@ -14,13 +16,13 @@ server:
     cargo run -p server
 
 dev-server:
-    watchexec --restart --watch server --watch common --exts rs,toml,html,css -- cargo run -p server --features livereload
+    watchexec --restart --watch server --watch common --watch hub --exts rs,toml,html,css -- cargo run -p server --features livereload
 
 hub:
     cargo run -p hub
 
 dev-hub:
-    watchexec --restart --watch server --watch common --exts rs,toml,html,css -- cargo run -p hub
+    watchexec --restart --watch server --watch common --watch hub --exts rs,toml,html,css -- cargo run -p hub
 
 build-firmware:
     cd firmware && cargo build
