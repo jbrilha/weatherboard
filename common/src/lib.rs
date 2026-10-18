@@ -25,7 +25,7 @@ pub enum DecodeError {
 }
 
 impl Payload {
-    pub fn new(counter: u32) -> Self {
+    pub fn new(_counter: u32) -> Self {
         let buf = [0u8; TEST_LEN];
         let mut i = 0;
         let buf = buf.map(|_| {

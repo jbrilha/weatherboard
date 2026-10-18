@@ -8,16 +8,9 @@ use btleplug::api::{
     Central, CentralEvent, Manager as _, Peripheral, ScanFilter, bleuuid::BleUuid,
 };
 use btleplug::platform::{Adapter, Manager};
-use common::ipc::HUB_SOCKET;
 use common::{MAX_PAYLOAD_LEN, Payload, display_service_uuid, weather_payload_uuid};
-use futures::SinkExt;
 use futures::stream::StreamExt;
-use std::path::Path;
-use std::sync::Arc;
 use std::time::Duration;
-use tokio::net::UnixStream;
-use tokio_util::bytes::{BufMut, Bytes};
-use tokio_util::codec::{Framed, LengthDelimitedCodec};
 
 use crate::ipc::IpcService;
 

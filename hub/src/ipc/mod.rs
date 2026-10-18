@@ -1,18 +1,11 @@
-use std::{
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::time::Duration;
 
-use common::{MAX_PAYLOAD_LEN, Payload, ipc::HUB_SOCKET};
+use common::{Payload, ipc::HUB_SOCKET};
 use futures::SinkExt;
 use futures::stream::StreamExt;
-use tokio::{
-    net::{UnixListener, UnixStream},
-    sync::watch,
-};
+use tokio::net::UnixStream;
 use tokio_util::bytes::Bytes;
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
-use tracing::info;
 
 type FramedSock = Framed<UnixStream, LengthDelimitedCodec>;
 
