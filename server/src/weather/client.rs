@@ -36,11 +36,24 @@ impl WeatherClient {
     ) -> anyhow::Result<Forecast<T>> {
         let url = Url::parse(ONE_CALL_API)?.join(req.endpoint.path())?;
 
-        let response = self
-            .client
-            .get(url)
-            .query(&req.params)
-            .query(&[("appid", self.api_key.clone())])
+        self.send(
+            self.client
+                .get(url)
+                .query(&req.params)
+                .query(&[("appid", self.api_key.clone())]),
+        )
+        .await
+    }
+
+    pub async fn fetch_next<T: DeserializeOwned>(&self, url: &str) -> anyhow::Result<Forecast<T>> {
+        self.send(self.client.get(url)).await
+    }
+
+    async fn send<T: DeserializeOwned>(
+        &self,
+        request: reqwest::RequestBuilder,
+    ) -> anyhow::Result<Forecast<T>> {
+        let response = request
             .send()
             .await
             .map_err(reqwest::Error::without_url)?
