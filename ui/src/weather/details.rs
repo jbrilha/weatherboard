@@ -62,12 +62,12 @@ pub struct Conditions {
     pub sunrise: HoursMinutes,
     pub sunset: HoursMinutes,
     // pub timezone_offset: i32,
-    pub wind_kmh: f32,
-    pub humidity: u8,
-    pub pressure_hpa: f32,
-    pub uvi: f32,
-    pub dew_point_c: f32,
-    pub rain_chance: f32,
+    pub wind_kmh: u8,
+    pub humidity_pct: u8,
+    pub pressure_hpa: u16,
+    pub uvi_tenths: u8,
+    pub dew_point_c: i8,
+    pub rain_pct: u8,
 }
 
 pub struct Details {
@@ -96,12 +96,12 @@ impl Details {
         Self {
             sunrise: Detail::new(format_args!("{rise_h:02}:{rise_m:02}")),
             sunset: Detail::new(format_args!("{set_h:02}:{set_m:02}")),
-            wind: Detail::new(format_args!("{:.0} km/h", c.wind_kmh)),
-            humidity: Detail::new(format_args!("{}%", c.humidity)),
-            pressure: Detail::new(format_args!("{:.0} hPa", c.pressure_hpa)),
-            uvi: Detail::new(format_args!("UV {:.1}", c.uvi)),
-            dew_point: Detail::new(format_args!("{:.0}°C", c.dew_point_c)),
-            rain_chance: Detail::new(format_args!("{:.0}%", c.rain_chance * 100.0)),
+            wind: Detail::new(format_args!("{} km/h", c.wind_kmh)),
+            humidity: Detail::new(format_args!("{}%", c.humidity_pct)),
+            pressure: Detail::new(format_args!("{} hPa", c.pressure_hpa)),
+            uvi: Detail::new(format_args!("UV {}.{}", c.uvi_tenths / 10, c.uvi_tenths % 10)),
+            dew_point: Detail::new(format_args!("{}°C", c.dew_point_c)),
+            rain_chance: Detail::new(format_args!("{}%", c.rain_pct)),
         }
     }
 }

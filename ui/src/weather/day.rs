@@ -1,5 +1,4 @@
-use enum_iterator::Sequence;
-
+pub use common::weather::Day;
 use embedded_graphics::{
     image::Image,
     mono_font::MonoTextStyle,
@@ -14,51 +13,12 @@ use embedded_layout::{
     object_chain::Chain,
 };
 use profont::PROFONT_10_POINT;
-use strum::EnumString;
 pub use weact_studio_epd::TriColor;
 
 use crate::Widget;
 use crate::weather::forecast::Forecast;
 
 const ROW_MARGIN: i32 = 10;
-
-#[derive(Copy, Clone, Debug, PartialEq, Sequence, EnumString, strum::Display)]
-#[cfg_attr(target_os = "none", derive(defmt::Format))]
-pub enum Day {
-    Sunday,
-    Monday,
-    Tuesday,
-    Wednesday,
-    Thursday,
-    Friday,
-    Saturday,
-}
-
-impl Day {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Day::Sunday => "Sunday",
-            Day::Monday => "Monday",
-            Day::Tuesday => "Tuesday",
-            Day::Wednesday => "Wednesday",
-            Day::Thursday => "Thursday",
-            Day::Friday => "Friday",
-            Day::Saturday => "Saturday",
-        }
-    }
-
-    pub fn as_short_str(&self) -> &'static str {
-        match self {
-            Day::Sunday => "Sun",
-            Day::Monday => "Mon",
-            Day::Tuesday => "Tue",
-            Day::Wednesday => "Wed",
-            Day::Thursday => "Thu",
-            Day::Friday => "Fri",
-            Day::Saturday => "Sat",
-        }
-    }
-}
 
 fn day_widget(forecast: &Forecast) -> impl Widget {
     let text_style = MonoTextStyle::new(&PROFONT_10_POINT, TriColor::Red);

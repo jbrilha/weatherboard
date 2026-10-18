@@ -6,6 +6,9 @@ mod title;
 mod today;
 mod weather_icon;
 
+use core::fmt::Write;
+
+use common::weather::{Location, Month, WeatherPayload};
 use embedded_graphics::{
     prelude::*,
     primitives::{Line, PrimitiveStyle},
@@ -19,6 +22,7 @@ use embedded_layout::{
     align::{Align, horizontal, vertical},
 };
 use enum_iterator::next_cycle;
+use heapless::String;
 use rand::{RngExt, SeedableRng, rngs::SmallRng};
 pub use weact_studio_epd::TriColor;
 
@@ -66,11 +70,11 @@ impl WeatherInfo {
     pub fn default() -> Self {
         let mut day = Day::Thursday;
 
-        let title = Title::new("Lisbon", day, "Oct 10");
+        let title = Title::new(Location::Lisbon, day, Month::October, 10);
         let today = Today::new(
-            LargeWeatherIcon::PartlyCloudy(size96px::weather::CloudSunny::new(TriColor::Red)),
-            20.7,
-            19.9,
+            LargeWeatherIcon::PartlyCloudy(size96px::weather::CloudSunny::new(TriColor::Black)),
+            21,
+            20,
         );
         let details = Details::new(&Conditions {
             sunrise: HoursMinutes::new(7, 15),
@@ -78,12 +82,12 @@ impl WeatherInfo {
             // sunrise: 1_791_887_344,
             // sunset: 1_791_828_203,
             // timezone_offset: 3_600,
-            wind_kmh: 23.8,
-            humidity: 59,
-            pressure_hpa: 1019.3,
-            uvi: 4.9,
-            dew_point_c: 12.6,
-            rain_chance: 0.33,
+            wind_kmh: 24,
+            humidity_pct: 59,
+            pressure_hpa: 1019,
+            uvi_tenths: 49,
+            dew_point_c: 13,
+            rain_pct: 33,
         });
         let chart = Chart::new(
             19,
@@ -105,6 +109,48 @@ impl WeatherInfo {
             let low_temp: i8 = rng.random_range(10..=99);
             let high_temp: i8 = rng.random_range(10..=99);
             forecast::Forecast::new(day, icon, low_temp, high_temp)
+        });
+
+        WeatherInfo::new(title, today, details, chart, weekly_forecast)
+    }
+}
+
+impl From<&WeatherPayload> for WeatherInfo {
+    fn from(p: &WeatherPayload) -> Self {
+        let title = Title::new(p.location, p.week_day, p.month, p.day);
+
+        let today = Today::new(
+            LargeWeatherIcon::new(p.condition, TriColor::Black),
+            p.temp_c,
+            p.feels_like_c,
+        );
+
+        let details = Details::new(&Conditions {
+            sunrise: HoursMinutes::new(p.sunrise.0, p.sunrise.1),
+            sunset: HoursMinutes::new(p.sunset.0, p.sunset.1),
+            wind_kmh: p.wind_kmh,
+            humidity_pct: p.humidity_pct,
+            pressure_hpa: p.pressure_hpa,
+            uvi_tenths: p.uvi_tenths,
+            dew_point_c: p.dew_point_c,
+            rain_pct: p.rain_pct,
+        });
+
+        let chart = Chart::new(
+            p.chart_low_c,
+            p.chart_high_c,
+            core::array::from_fn(|i| ((usize::from(p.chart_start_hour) + 2 * i) % 24) as u8),
+        );
+
+        let mut day = p.week_day;
+        let weekly_forecast = p.forecast.map(|f| {
+            day = next_cycle(&day);
+            Forecast::new(
+                day,
+                WeatherIcon::new(f.condition, TriColor::Black),
+                f.low_c,
+                f.high_c,
+            )
         });
 
         WeatherInfo::new(title, today, details, chart, weekly_forecast)

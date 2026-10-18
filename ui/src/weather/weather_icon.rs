@@ -1,3 +1,4 @@
+use common::weather::Condition;
 use embedded_graphics::{
     draw_target::DrawTarget,
     geometry::{OriginDimensions, Size},
@@ -35,6 +36,22 @@ macro_rules! weather_icon {
             Snow(Icon<TriColor, $size::weather::Snow>),
             Thunderstorm(Icon<TriColor, $size::weather::Thunderstorm>),
             Wind(Icon<TriColor, $size::weather::Wind>),
+        }
+
+        impl $name {
+            pub fn new(condition: Condition, color: TriColor) -> Self {
+                match condition {
+                    Condition::Sunny => Self::Sunny(Icon::new(color)),
+                    Condition::PartlyCloudy => Self::PartlyCloudy(Icon::new(color)),
+                    Condition::Cloudy => Self::Cloudy(Icon::new(color)),
+                    Condition::Fog => Self::Fog(Icon::new(color)),
+                    Condition::Rain => Self::Rain(Icon::new(color)),
+                    Condition::HeavyRain => Self::HeavyRain(Icon::new(color)),
+                    Condition::Snow => Self::Snow(Icon::new(color)),
+                    Condition::Thunderstorm => Self::Thunderstorm(Icon::new(color)),
+                    Condition::Wind => Self::Wind(Icon::new(color)),
+                }
+            }
         }
 
         impl OriginDimensions for $name {

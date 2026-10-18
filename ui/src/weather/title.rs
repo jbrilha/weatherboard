@@ -1,3 +1,4 @@
+use common::weather::{Location, Month};
 use embedded_graphics::{
     geometry::Point,
     mono_font::MonoTextStyle,
@@ -15,6 +16,7 @@ use weact_studio_epd::TriColor;
 
 use crate::Widget;
 use crate::weather::{ROW_MARGIN, day::Day};
+use core::fmt::Write;
 
 pub struct Title {
     pub location: String<16>,
@@ -22,11 +24,14 @@ pub struct Title {
     pub date: String<6>,
 }
 impl Title {
-    pub fn new(location: &str, week_day: Day, date: &str) -> Self {
+    pub fn new(location: Location, week_day: Day, month: Month, day: u8) -> Self {
+        let mut date: String<6> = String::new();
+        write!(date, "{} {}", month.as_short_str(), day).unwrap();
+
         Self {
-            location: String::try_from(location).unwrap(),
+            location: String::try_from(location.name()).unwrap(),
             week_day,
-            date: String::try_from(date).unwrap(),
+            date,
         }
     }
 }
