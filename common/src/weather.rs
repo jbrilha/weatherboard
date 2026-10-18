@@ -169,6 +169,8 @@ pub struct WeatherPayload {
     pub chart_low_c: i8,
     pub chart_high_c: i8,
     pub chart_start_hour: u8,
+    pub chart_temps_c: [i8; 12],
+    pub chart_pop_pct: [u8; 12],
 
     pub forecast: [DayForecast; 6],
 }
@@ -193,6 +195,8 @@ impl WeatherPayload {
         chart_low_c: i8,
         chart_high_c: i8,
         chart_start_hour: u8,
+        chart_temps_c: [i8; 12],
+        chart_pop_pct: [u8; 12],
         forecast: [DayForecast; 6],
     ) -> Self {
         Self {
@@ -214,6 +218,8 @@ impl WeatherPayload {
             chart_low_c,
             chart_high_c,
             chart_start_hour,
+            chart_temps_c,
+            chart_pop_pct,
             forecast,
         }
     }
@@ -270,6 +276,8 @@ impl WeatherPayload {
             chart_low_c: 18,
             chart_high_c: 34,
             chart_start_hour: (7),
+            chart_temps_c: [18, 19, 21, 24, 27, 30, 32, 34, 31, 27, 23, 20],
+            chart_pop_pct: [0, 0, 5, 10, 20, 40, 60, 40, 20, 10, 0, 0],
             forecast,
         }
     }

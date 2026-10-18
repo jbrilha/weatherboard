@@ -6,8 +6,6 @@ mod title;
 mod today;
 mod weather_icon;
 
-use core::fmt::Write;
-
 use common::weather::{Location, Month, WeatherPayload};
 use embedded_graphics::{
     prelude::*,
@@ -22,7 +20,6 @@ use embedded_layout::{
     align::{Align, horizontal, vertical},
 };
 use enum_iterator::next_cycle;
-use heapless::String;
 use rand::{RngExt, SeedableRng, rngs::SmallRng};
 pub use weact_studio_epd::TriColor;
 
@@ -93,6 +90,8 @@ impl WeatherInfo {
             19,
             36,
             core::array::from_fn(|i| ((HOUR0 + 2 * i) % 24) as u8),
+            [19, 20, 22, 25, 28, 31, 33, 36, 32, 28, 24, 21],
+            [0, 0, 5, 10, 20, 40, 60, 40, 20, 10, 0, 0],
         );
 
         let mut rng = SmallRng::seed_from_u64(12);
@@ -140,6 +139,8 @@ impl From<&WeatherPayload> for WeatherInfo {
             p.chart_low_c,
             p.chart_high_c,
             core::array::from_fn(|i| ((usize::from(p.chart_start_hour) + 2 * i) % 24) as u8),
+            p.chart_temps_c,
+            p.chart_pop_pct,
         );
 
         let mut day = p.week_day;
