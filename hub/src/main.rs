@@ -77,32 +77,35 @@ async fn main() -> anyhow::Result<()> {
     let mut events = central.events().await?;
 
     // start scanning for devices
-    central
-        .start_scan(ScanFilter {
-            services: vec![display_service_uuid()],
-        })
-        .await?;
+    let filter = ScanFilter {
+        services: vec![display_service_uuid()],
+    };
+    central.start_scan(filter.clone()).await?;
 
     // Process events asynchronously. In a real program, run this loop in its own
     // Tokio task if event handling should proceed independently of other work.
     while let Some(event) = events.next().await {
         match event {
-            CentralEvent::DeviceDiscovered(id) => {
-                let peripheral = central.peripheral(&id).await?;
-                let properties = peripheral.properties().await?;
-                let name = properties
+            CentralEvent::DeviceDiscovered(id) | CentralEvent::DeviceUpdated(id) => {
+                let Ok(peripheral) = central.peripheral(&id).await else {
+                    continue;
+                };
+                let name = peripheral
+                    .properties()
+                    .await
+                    .ok()
+                    .flatten()
                     .and_then(|p| p.local_name)
                     .map(|local_name| format!("Name: {local_name}"))
                     .unwrap_or_default();
-                println!("DeviceDiscovered: {:?} {}", id, name);
+                println!("Found board: {:?} {}", id, name);
 
                 central.stop_scan().await?;
-                loop {
-                    if let Err(e) = forward(&peripheral, &mut latest).await {
-                        println!("board link lost: {e:#}");
-                        peripheral.disconnect().await.ok();
-                        tokio::time::sleep(RECONNECT_DELAY).await;
-                    }
+                if let Err(e) = forward(&peripheral, &mut latest).await {
+                    println!("board link lost: {e:#}");
+                    peripheral.disconnect().await.ok();
+                    tokio::time::sleep(RECONNECT_DELAY).await;
+                    central.start_scan(filter.clone()).await?;
                 }
             }
             CentralEvent::StateUpdate(state) => {

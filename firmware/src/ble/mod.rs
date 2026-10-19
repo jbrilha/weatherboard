@@ -72,6 +72,7 @@ pub async fn start(spawner: Spawner) {
             gap_params
                 .bd_addr
                 .copy_from_slice(&embassy_stm32::uid::uid()[0..6]);
+            gap_params.bd_addr[5] |= 0xC0;
             HCI::new_with_gap_params(platform, runtime, Irqs, gap_params).await
         }
     }
