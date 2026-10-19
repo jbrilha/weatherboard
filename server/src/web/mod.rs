@@ -45,7 +45,7 @@ fn bad_gateway(err: anyhow::Error) -> (StatusCode, String) {
 }
 
 fn latest(weather: &WeatherService) -> WebResult<Arc<Forecast1Day>> {
-    weather.latest().ok_or_else(|| {
+    weather.latest().map(|s| s.daily.clone()).ok_or_else(|| {
         let reason = weather
             .last_error()
             .unwrap_or_else(|| "first fetch in progress".to_string());

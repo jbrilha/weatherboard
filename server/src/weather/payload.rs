@@ -12,8 +12,8 @@ fn local_day(t: i64, offset: i64) -> i64 {
     (t + offset).div_euclid(DAY)
 }
 
-fn hours_minutes(t: i32, offset: i64) -> (u8, u8) {
-    let secs = (i64::from(t) + offset).rem_euclid(DAY);
+fn hours_minutes(t: i64, offset: i64) -> (u8, u8) {
+    let secs = (t + offset).rem_euclid(DAY);
     ((secs / HOUR) as u8, (secs % HOUR / 60) as u8)
 }
 
@@ -45,13 +45,14 @@ pub fn fill_daily(
     daily: &Forecast1Day,
     location: Location,
     now: i64,
+    updated_at: i64,
 ) -> bool {
     let offset = i64::from(daily.timezone_offset);
     let today = local_day(now, offset);
     let days: Vec<&DailyForecast> = daily
         .data
         .iter()
-        .skip_while(|d| local_day(i64::from(d.dt), offset) < today)
+        .skip_while(|d| local_day(d.dt, offset) < today)
         .take(7)
         .collect();
     let Ok([t, forecast @ ..]): Result<[&DailyForecast; 7], _> = days.try_into() else {
@@ -68,6 +69,7 @@ pub fn fill_daily(
         .unwrap();
     payload.month = all::<Month>().nth(date.month() as usize - 1).unwrap();
     payload.day = date.day() as u8;
+    payload.updated = hours_minutes(updated_at, offset);
 
     payload.condition = condition(&t.weather);
     payload.temp_c = t.temp.day.round() as i8;

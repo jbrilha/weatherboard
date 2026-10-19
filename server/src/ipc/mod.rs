@@ -31,11 +31,17 @@ impl IpcService {
     }
 
     fn payload(&self) -> Option<WeatherPayload> {
-        let daily = self.weather.latest()?;
-        let hourly = self.weather.latest_hourly()?;
+        let snapshot = self.weather.latest()?;
+        let (daily, hourly) = (&snapshot.daily, &snapshot.hourly);
         let now = jiff::Timestamp::now().as_second();
         let mut payload = WeatherPayload::default();
-        if !fill_daily(&mut payload, &daily, self.weather.location(), now) {
+        if !fill_daily(
+            &mut payload,
+            daily,
+            self.weather.location(),
+            now,
+            snapshot.fetched_at,
+        ) {
             warn!(
                 "not enough daily data: {} entries, first dt {:?}, now {now}",
                 daily.data.len(),
@@ -43,7 +49,7 @@ impl IpcService {
             );
             return None;
         }
-        if !fill_chart(&mut payload, &hourly, now) {
+        if !fill_chart(&mut payload, hourly, now) {
             warn!(
                 "not enough hourly data for the chart: {} entries, first dt {:?}, last dt {:?}, now {now}",
                 hourly.data.len(),

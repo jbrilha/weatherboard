@@ -75,9 +75,9 @@ pub struct Weather {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct DailyForecast {
-    pub dt: i32,
-    pub sunrise: i32,
-    pub sunset: i32,
+    pub dt: i64,
+    pub sunrise: i64,
+    pub sunset: i64,
     moonrise: i32,
     moonset: i32,
     moon_phase: f32,

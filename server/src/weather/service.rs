@@ -17,20 +17,24 @@ use super::{WeatherRequest, client::WeatherClient};
 const REFRESH_INTERVAL: Duration = Duration::from_mins(15);
 const RETRY_INTERVAL: Duration = Duration::from_secs(30);
 
+pub struct Snapshot {
+    pub daily: Arc<Forecast1Day>,
+    pub hourly: Forecast1Hour,
+    pub fetched_at: i64,
+}
+
 pub struct WeatherService {
     client: WeatherClient,
     location: Location,
     daily_request: WeatherRequest,
     hourly_request: WeatherRequest,
-    latest: watch::Sender<Option<Arc<Forecast1Day>>>,
-    latest_hourly: watch::Sender<Option<Arc<Forecast1Hour>>>,
+    latest: watch::Sender<Option<Arc<Snapshot>>>,
     last_error: Mutex<Option<String>>,
 }
 
 impl WeatherService {
     pub fn new(client: WeatherClient, location: Location, units: Units) -> Self {
         let (latest, _) = watch::channel(None);
-        let (latest_hourly, _) = watch::channel(None);
         Self {
             client,
             location,
@@ -43,7 +47,6 @@ impl WeatherService {
                 WeatherParams::at(location, units),
             ),
             latest,
-            latest_hourly,
             last_error: Mutex::new(None),
         }
     }
@@ -56,12 +59,8 @@ impl WeatherService {
         self.location
     }
 
-    pub fn latest(&self) -> Option<Arc<Forecast1Day>> {
+    pub fn latest(&self) -> Option<Arc<Snapshot>> {
         self.latest.borrow().clone()
-    }
-
-    pub fn latest_hourly(&self) -> Option<Arc<Forecast1Hour>> {
-        self.latest_hourly.borrow().clone()
     }
 
     pub fn last_error(&self) -> Option<String> {
@@ -87,8 +86,11 @@ impl WeatherService {
         );
         match fetched {
             Ok((daily, hourly)) => {
-                self.latest.send_replace(Some(Arc::new(daily)));
-                self.latest_hourly.send_replace(Some(Arc::new(hourly)));
+                self.latest.send_replace(Some(Arc::new(Snapshot {
+                    daily: Arc::new(daily),
+                    hourly,
+                    fetched_at: jiff::Timestamp::now().as_second(),
+                })));
                 *self.last_error.lock().unwrap() = None;
                 Ok(())
             }
