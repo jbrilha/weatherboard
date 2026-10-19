@@ -4,11 +4,12 @@ use std::{
 };
 
 use common::weather::Location;
+use serde::de::DeserializeOwned;
 use tokio::sync::watch;
 
 use crate::weather::{
     WeatherParams,
-    openweathermap::{Forecast1Day, Forecast1Hour, OpenCallEndpoint, Units},
+    openweathermap::{Forecast, Forecast1Day, Forecast1Hour, OpenCallEndpoint, Units},
 };
 
 use super::{WeatherRequest, client::WeatherClient};
@@ -18,7 +19,8 @@ const RETRY_INTERVAL: Duration = Duration::from_secs(30);
 
 pub struct WeatherService {
     client: WeatherClient,
-    request: WeatherRequest,
+    location: Location,
+    daily_request: WeatherRequest,
     hourly_request: WeatherRequest,
     latest: watch::Sender<Option<Arc<Forecast1Day>>>,
     latest_hourly: watch::Sender<Option<Arc<Forecast1Hour>>>,
@@ -26,17 +28,20 @@ pub struct WeatherService {
 }
 
 impl WeatherService {
-    pub fn new(
-        client: WeatherClient,
-        request: WeatherRequest,
-        hourly_request: WeatherRequest,
-    ) -> Self {
+    pub fn new(client: WeatherClient, location: Location, units: Units) -> Self {
         let (latest, _) = watch::channel(None);
         let (latest_hourly, _) = watch::channel(None);
         Self {
             client,
-            request,
-            hourly_request,
+            location,
+            daily_request: WeatherRequest::new(
+                OpenCallEndpoint::Timeline1Day,
+                WeatherParams::at(location, units),
+            ),
+            hourly_request: WeatherRequest::new(
+                OpenCallEndpoint::Timeline1Hour,
+                WeatherParams::at(location, units),
+            ),
             latest,
             latest_hourly,
             last_error: Mutex::new(None),
@@ -44,16 +49,11 @@ impl WeatherService {
     }
 
     pub fn default() -> Self {
-        let client = WeatherClient::new();
-        let request = WeatherRequest::new(
-            OpenCallEndpoint::Timeline1Day,
-            WeatherParams::at(Location::Lisbon, Units::Metric),
-        );
-        let hourly_request = WeatherRequest::new(
-            OpenCallEndpoint::Timeline1Hour,
-            WeatherParams::at(Location::Lisbon, Units::Metric),
-        );
-        WeatherService::new(client, request, hourly_request)
+        WeatherService::new(WeatherClient::new(), Location::Lisbon, Units::Metric)
+    }
+
+    pub fn location(&self) -> Location {
+        self.location
     }
 
     pub fn latest(&self) -> Option<Arc<Forecast1Day>> {
@@ -68,10 +68,22 @@ impl WeatherService {
         self.last_error.lock().unwrap().clone()
     }
 
+    async fn fetch_paged<T: DeserializeOwned>(
+        &self,
+        request: &WeatherRequest,
+    ) -> anyhow::Result<Forecast<T>> {
+        let mut forecast: Forecast<T> = self.client.fetch(request).await?;
+        if let Some(next) = forecast.next.take() {
+            let more: Forecast<T> = self.client.fetch_next(&next).await?;
+            forecast.data.extend(more.data);
+        }
+        Ok(forecast)
+    }
+
     pub async fn refresh(&self) -> anyhow::Result<()> {
         let fetched = tokio::try_join!(
-            self.client.fetch(&self.request),
-            self.client.fetch(&self.hourly_request),
+            self.client.fetch(&self.daily_request),
+            self.fetch_paged(&self.hourly_request),
         );
         match fetched {
             Ok((daily, hourly)) => {

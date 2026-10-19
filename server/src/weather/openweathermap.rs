@@ -26,9 +26,9 @@ impl OpenCallEndpoint {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct Temperature {
-    day: f32,
-    min: f32,
-    max: f32,
+    pub day: f32,
+    pub min: f32,
+    pub max: f32,
     night: f32,
     eve: f32,
     morn: f32,
@@ -37,7 +37,7 @@ pub struct Temperature {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct FeelsLike {
-    day: f32,
+    pub day: f32,
     night: f32,
     eve: f32,
     morn: f32,
@@ -66,8 +66,8 @@ pub enum WeatherMain {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct Weather {
-    id: i32,
-    main: WeatherMain,
+    pub id: i32,
+    pub main: WeatherMain,
     description: String,
     icon: String,
 }
@@ -75,25 +75,25 @@ pub struct Weather {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct DailyForecast {
-    dt: i32,
-    sunrise: i32,
-    sunset: i32,
+    pub dt: i32,
+    pub sunrise: i32,
+    pub sunset: i32,
     moonrise: i32,
     moonset: i32,
     moon_phase: f32,
-    temp: Temperature,
-    feels_like: FeelsLike,
-    pressure: f32,
-    humidity: i32,
-    dew_point: f32,
-    wind_speed: f32,
+    pub temp: Temperature,
+    pub feels_like: FeelsLike,
+    pub pressure: f32,
+    pub humidity: i32,
+    pub dew_point: f32,
+    pub wind_speed: f32,
     wind_deg: i32,
-    weather: Vec<Weather>,
+    pub weather: Vec<Weather>,
     clouds: i32,
     #[serde(default)]
-    pop: Option<f32>,
+    pub pop: Option<f32>,
     #[serde(default)]
-    uvi: Option<f32>,
+    pub uvi: Option<f32>,
     #[serde(default)]
     rain: Option<f32>,
 }
@@ -144,6 +144,8 @@ pub struct Forecast<T> {
     pub timezone: String,
     pub timezone_offset: i32,
     pub data: Vec<T>,
+    #[serde(default, skip_serializing)]
+    pub next: Option<String>,
 }
 
 impl<T: Serialize> Forecast<T> {
