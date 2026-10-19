@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
-use common::MAX_PAYLOAD_LEN;
-use common::ipc::HUB_SOCKET;
+use common::ipc::{HUB_SOCKET, ToHub, ToServer};
 use common::weather::WeatherPayload;
+use common::{MAX_PAYLOAD_LEN, Message};
 use futures::{SinkExt, StreamExt};
 use tokio::net::{UnixListener, UnixStream};
 use tokio_util::bytes::Bytes;
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
-use tracing::{info, warn};
+use tracing::warn;
 
 use crate::weather::{
     payload::{fill_chart, fill_daily},
@@ -69,9 +69,14 @@ impl IpcService {
         let mut socket = Framed::new(stream, LengthDelimitedCodec::new());
 
         while let Some(frame) = socket.next().await {
-            info!("got {:?}", frame?);
-            let bytes = self.payload().encode(buf)?;
-            socket.send(Bytes::copy_from_slice(bytes)).await?;
+            match ToServer::decode(&frame?) {
+                Ok(ToServer::GetWeather) => {
+                    let bytes = ToHub::Weather(self.payload()).encode(buf)?;
+                    socket.send(Bytes::copy_from_slice(bytes)).await?;
+                }
+                Ok(ToServer::Config(config)) => warn!("config not handled yet: {config:?}"),
+                Err(e) => warn!("request rejected: {e:?}"),
+            }
         }
 
         Ok(())

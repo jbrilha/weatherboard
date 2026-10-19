@@ -2,8 +2,6 @@ use enum_iterator::Sequence;
 use serde::{Deserialize, Serialize};
 use strum::EnumString;
 
-use crate::{DecodeError, MAX_PAYLOAD_LEN};
-
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[serde(rename_all = "snake_case")]
@@ -280,17 +278,5 @@ impl WeatherPayload {
             chart_pop_pct: [0, 0, 5, 10, 20, 40, 60, 40, 20, 10, 0, 0],
             forecast,
         }
-    }
-
-    pub fn encode<'a>(
-        &self,
-        buf: &'a mut [u8; MAX_PAYLOAD_LEN],
-    ) -> Result<&'a [u8], postcard::Error> {
-        postcard::to_slice(self, buf).map(|bytes| &*bytes)
-    }
-
-    pub fn decode(bytes: &[u8]) -> Result<Self, DecodeError> {
-        let payload: Self = postcard::from_bytes(bytes).map_err(|_| DecodeError::Malformed)?;
-        Ok(payload)
     }
 }

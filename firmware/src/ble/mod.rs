@@ -1,7 +1,7 @@
 // embassy stm32wba65 ble_gatt_server example
 
-use common::MAX_PAYLOAD_LEN;
 use common::weather::WeatherPayload;
+use common::{MAX_PAYLOAD_LEN, Message, ToBoard};
 use defmt::{Display2Format, debug, error, info, warn};
 use embassy_executor::Spawner;
 use embassy_stm32_wpan::bluetooth::gap::types::OwnAddressType;
@@ -216,10 +216,13 @@ async fn ble_task(mut ble: HCI<'static, Normal>) {
                 }
                 // Check if this is a characteristic value write
                 else if is_value_handle(state.data_char_handle.0, attribute.attr_handle.0) {
-                    match WeatherPayload::decode(attribute.data()) {
-                        Ok(payload) => {
+                    match ToBoard::decode(attribute.data()) {
+                        Ok(ToBoard::Weather(payload)) => {
                             info!("Payload received: {}", payload);
                             WEATHER.signal(payload);
+                        }
+                        Ok(ToBoard::Config(config)) => {
+                            warn!("config not handled yet: {}", config)
                         }
                         Err(e) => warn!("Payload rejected: {} (raw {:?})", e, attribute.data()),
                     }

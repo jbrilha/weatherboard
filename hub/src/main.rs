@@ -9,7 +9,7 @@ use btleplug::api::{
 };
 use btleplug::platform::{Adapter, Manager};
 use common::weather::WeatherPayload;
-use common::{MAX_PAYLOAD_LEN, display_service_uuid, weather_payload_uuid};
+use common::{MAX_PAYLOAD_LEN, Message, ToBoard, display_service_uuid, weather_payload_uuid};
 use futures::stream::StreamExt;
 use std::time::Duration;
 use tokio::sync::watch;
@@ -45,7 +45,7 @@ async fn forward(
         let Some(payload) = *latest.borrow_and_update() else {
             continue;
         };
-        let bytes = payload.encode(&mut buf)?;
+        let bytes = ToBoard::Weather(payload).encode(&mut buf)?;
         peripheral
             .write(&ch, bytes, WriteType::WithResponse)
             .await?;
