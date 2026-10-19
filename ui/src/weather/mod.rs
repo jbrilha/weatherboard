@@ -67,7 +67,7 @@ impl WeatherInfo {
     pub fn default() -> Self {
         let mut day = Day::Thursday;
 
-        let title = Title::new(Location::Lisbon, day, Month::October, 10);
+        let title = Title::new(Location::Lisbon, day, Month::October, 10, (12, 0));
         let today = Today::new(
             LargeWeatherIcon::PartlyCloudy(size96px::weather::CloudSunny::new(TriColor::Black)),
             21,
@@ -116,7 +116,7 @@ impl WeatherInfo {
 
 impl From<&WeatherPayload> for WeatherInfo {
     fn from(p: &WeatherPayload) -> Self {
-        let title = Title::new(p.location, p.week_day, p.month, p.day);
+        let title = Title::new(p.location, p.week_day, p.month, p.day, p.updated);
 
         let today = Today::new(
             LargeWeatherIcon::new(p.condition, TriColor::Black),
