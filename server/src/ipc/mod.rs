@@ -30,29 +30,29 @@ impl IpcService {
         Ok(IpcService::new(listener, weather))
     }
 
-    fn payload(&self) -> WeatherPayload {
-        let mut payload = WeatherPayload::default();
+    fn payload(&self) -> Option<WeatherPayload> {
+        let daily = self.weather.latest()?;
+        let hourly = self.weather.latest_hourly()?;
         let now = jiff::Timestamp::now().as_second();
-        if let Some(daily) = self.weather.latest()
-            && !fill_daily(&mut payload, &daily, self.weather.location(), now)
-        {
+        let mut payload = WeatherPayload::default();
+        if !fill_daily(&mut payload, &daily, self.weather.location(), now) {
             warn!(
                 "not enough daily data: {} entries, first dt {:?}, now {now}",
                 daily.data.len(),
                 daily.data.first().map(|d| d.dt),
             );
+            return None;
         }
-        if let Some(hourly) = self.weather.latest_hourly()
-            && !fill_chart(&mut payload, &hourly, now)
-        {
+        if !fill_chart(&mut payload, &hourly, now) {
             warn!(
                 "not enough hourly data for the chart: {} entries, first dt {:?}, last dt {:?}, now {now}",
                 hourly.data.len(),
                 hourly.data.first().map(|h| h.dt),
                 hourly.data.last().map(|h| h.dt),
             );
+            return None;
         }
-        payload
+        Some(payload)
     }
 
     pub async fn run(self) -> anyhow::Result<()> {
@@ -71,7 +71,11 @@ impl IpcService {
         while let Some(frame) = socket.next().await {
             match ToServer::decode(&frame?) {
                 Ok(ToServer::GetWeather) => {
-                    let bytes = ToHub::Weather(self.payload()).encode(buf)?;
+                    let reply = match self.payload() {
+                        Some(payload) => ToHub::Weather(payload),
+                        None => ToHub::WeatherUnavailable,
+                    };
+                    let bytes = reply.encode(buf)?;
                     socket.send(Bytes::copy_from_slice(bytes)).await?;
                 }
                 Ok(ToServer::Config(config)) => warn!("config not handled yet: {config:?}"),

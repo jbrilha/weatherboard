@@ -49,6 +49,9 @@ impl IpcService {
                             Ok(ToHub::Config(config)) => {
                                 warn!("config not handled yet: {config:?}")
                             }
+                            Ok(ToHub::WeatherUnavailable) => {
+                                info!("server has no weather yet, keeping the last payload")
+                            }
                             Err(e) => warn!("reply rejected: {e:?}"),
                         },
                         Err(e) => {

@@ -19,6 +19,7 @@ pub enum ToServer {
 pub enum ToHub {
     Weather(WeatherPayload),
     Config(Config),
+    WeatherUnavailable,
 }
 
 impl Message for ToServer {}
