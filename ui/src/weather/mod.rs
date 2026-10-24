@@ -158,7 +158,7 @@ impl From<&WeatherPayload> for WeatherInfo {
     }
 }
 
-pub fn dashboard<D>(display: &mut D, info: &WeatherInfo) -> Result<(), D::Error>
+pub fn draw_dashboard<D>(display: &mut D, info: &WeatherInfo) -> Result<(), D::Error>
 where
     D: DrawTarget<Color = TriColor>,
 {

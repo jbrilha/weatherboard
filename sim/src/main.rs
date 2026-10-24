@@ -4,6 +4,11 @@ use embedded_graphics_simulator::{
 };
 use ui::{TriColor, weather::WeatherInfo};
 
+enum Screen {
+    Dashboard,
+    Message,
+}
+
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
@@ -17,10 +22,14 @@ fn main() {
     );
 
     let mut round = 0;
+    let mut screen = Screen::Message;
+    let weather = WeatherInfo::default();
 
     'running: loop {
-        // ui::test_pattern(&mut epd, "simulator", round).unwrap();
-        ui::weather::dashboard(&mut epd, &&WeatherInfo::default()).unwrap();
+        match screen {
+            Screen::Dashboard => ui::weather::draw_dashboard(&mut epd, &weather).unwrap(),
+            Screen::Message => ui::wait::draw_message(&mut epd, round).unwrap(),
+        }
         window.update(&epd);
 
         for event in window.events() {
@@ -30,6 +39,15 @@ fn main() {
                     keycode: Keycode::Space,
                     ..
                 } => round += 1,
+                SimulatorEvent::KeyDown {
+                    keycode: Keycode::Return,
+                    ..
+                } => {
+                    screen = match screen {
+                        Screen::Dashboard => Screen::Message,
+                        Screen::Message => Screen::Dashboard,
+                    }
+                }
                 _ => {}
             }
         }

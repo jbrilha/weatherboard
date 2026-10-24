@@ -15,6 +15,7 @@ pub use weact_studio_epd::TriColor;
 #[macro_use]
 mod fmt;
 
+pub mod wait;
 pub mod weather;
 
 pub trait Widget: View + Drawable<Color = TriColor> {}

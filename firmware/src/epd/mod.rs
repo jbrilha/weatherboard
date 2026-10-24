@@ -111,15 +111,18 @@ pub async fn epd_task(mut epd: Epd) {
     info!("epd ready");
 
     let mut current: Option<WeatherPayload> = None;
-    ui::weather::dashboard(&mut epd.display, &WeatherInfo::default()).unwrap();
+    let mut round = 0;
 
     loop {
         match current {
             Some(payload) => {
                 let info = WeatherInfo::from(&payload);
-                ui::weather::dashboard(&mut epd.display, &info).unwrap();
+                ui::weather::draw_dashboard(&mut epd.display, &info).unwrap();
             }
-            None => {}
+            None => {
+                ui::wait::draw_message(&mut epd.display, round).unwrap();
+                round = round.wrapping_add(1);
+            }
         }
 
         epd.flush().await.unwrap();
@@ -180,8 +183,4 @@ fn draw_test_pattern(display: &mut Display420TriColor, refresh: Refresh, round: 
         Refresh::FastFull => "fast full refresh",
     };
     ui::test_pattern(display, label, round).unwrap();
-}
-
-fn draw_weather_dashboaard(display: &mut Display420TriColor) {
-    ui::weather::dashboard(display, &WeatherInfo::default()).unwrap();
 }
