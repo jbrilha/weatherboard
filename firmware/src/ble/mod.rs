@@ -2,7 +2,7 @@
 
 use common::weather::WeatherPayload;
 use common::{MAX_PAYLOAD_LEN, Message, ToBoard};
-use defmt::{Display2Format, debug, error, info, warn};
+use defmt::{Debug2Format, Display2Format, debug, error, info, warn};
 use embassy_executor::Spawner;
 use embassy_stm32_wpan::bluetooth::gap::types::OwnAddressType;
 use embassy_stm32_wpan::bluetooth::gap::{AdvData, AdvParams, AdvType, GapEvent};
@@ -15,6 +15,7 @@ use embassy_stm32_wpan::bluetooth::{HCI, Normal};
 use embassy_stm32_wpan::{Platform, new_platform};
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::signal::Signal;
+use embassy_time::Timer;
 use stm32wb_hci::Event;
 use stm32wb_hci::vendor::event::{AttExchangeMtuResponse, VendorEvent};
 
@@ -24,6 +25,7 @@ use crate::board::Irqs;
 const ADDR_TYPE: OwnAddressType = OwnAddressType::Random;
 const TX_POWER: u8 = 30;
 const DEVICE_NAME: &str = "wboard";
+const ADV_RETRY_SECS: u64 = 1;
 
 pub static WEATHER: Signal<CriticalSectionRawMutex, WeatherPayload> = Signal::new();
 
@@ -79,6 +81,20 @@ pub async fn start(spawner: Spawner) {
     .expect("BLE initialization failed");
 
     spawner.spawn(ble_task(ble).expect("Failed to spawn BLE task"));
+}
+
+async fn start_advertising(ble: &mut HCI<'static, Normal>, params: &AdvParams, data: &AdvData) {
+    while let Err(e) = ble
+        .start_advertising(params.clone(), data.clone(), None)
+        .await
+    {
+        warn!(
+            "Advertising failed to start: {}, retrying in {}s",
+            Debug2Format(&e),
+            ADV_RETRY_SECS
+        );
+        Timer::after_secs(ADV_RETRY_SECS).await;
+    }
 }
 
 #[embassy_executor::task]
@@ -149,11 +165,7 @@ async fn ble_task(mut ble: HCI<'static, Normal>) {
     };
 
     // Start advertising
-    {
-        ble.start_advertising(adv_params.clone(), adv_data.clone(), None)
-            .await
-            .expect("Failed to start advertising");
-    }
+    start_advertising(&mut ble, &adv_params, &adv_data).await;
 
     info!("GATT Server started as '{}'", DEVICE_NAME);
     info!("Waiting for connections...");
@@ -181,9 +193,7 @@ async fn ble_task(mut ble: HCI<'static, Normal>) {
                     state.notifications_enabled = false;
 
                     // Restart advertising
-                    ble.start_advertising(adv_params.clone(), adv_data.clone(), None)
-                        .await
-                        .expect("Failed to start advertising");
+                    start_advertising(&mut ble, &adv_params, &adv_data).await;
                     info!("Advertising restarted");
                 }
                 _ => {}
