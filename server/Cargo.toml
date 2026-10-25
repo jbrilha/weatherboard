@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow.workspace = true
-askama = "0.14.0"
+askama = "0.16.1"
 axum = "0.8.9"
 common.workspace = true
 enum-iterator.workspace = true
@@ -16,7 +16,7 @@ serde_json.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
 futures.workspace = true
-tower-http = { version = "0.6.8", features = ["fs", "trace"] }
+tower-http = { version = "0.7.1", features = ["fs", "trace"] }
 tower-livereload = { version = "0.10.3", optional = true }
 tracing.workspace = true
 tracing-subscriber.workspace = true

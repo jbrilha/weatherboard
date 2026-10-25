@@ -9,13 +9,13 @@ embedded-graphics = "0.8.2"
 embedded-iconoir = { version = "0.2.3", features = ["all-resolutions"] }
 embedded-layout = "0.4.2"
 enum-iterator.workspace = true
-heapless = "0.9.2"
+heapless = "0.9.3"
 profont = "0.7.0"
 rand = { version = "0.10.3", default-features = false }
 weact-studio-epd = { git = "https://github.com/jbrilha/weact-studio-epd" }
 
 [target.'cfg(target_os = "none")'.dependencies]
-defmt = "1.1"
+defmt = "1.2"
 embedded-graphics = { version = "0.8.2", features = ["defmt"] }
 
 [target.'cfg(not(target_os = "none"))'.dependencies]
