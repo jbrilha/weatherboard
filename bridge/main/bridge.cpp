@@ -17,7 +17,9 @@
 #include "esp_ldo_regulator.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "ethernet.hpp"
 #include "freertos/FreeRTOS.h"
+#include "freertos/projdefs.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "host/ble_hs.h"
@@ -32,7 +34,7 @@
 #include <sys/param.h>
 #include <unistd.h>
 
-static const char *TAG = "example";
+static constexpr char TAG[] = "example";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////// Please update the following configuration according to your
@@ -111,7 +113,8 @@ void example_rounder_flush_area_cb(lv_event_t *event) {
 
 static void example_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area,
                                   uint8_t *px_map) {
-    esp_lcd_panel_handle_t panel_handle = static_cast<esp_lcd_panel_handle_t>(lv_display_get_user_data(disp));
+    esp_lcd_panel_handle_t panel_handle =
+        static_cast<esp_lcd_panel_handle_t>(lv_display_get_user_data(disp));
     int offsetx1 = area->x1;
     int offsetx2 = area->x2;
     int offsety1 = area->y1;
@@ -122,7 +125,8 @@ static void example_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area,
 }
 
 static void example_lvgl_touch_cb(lv_indev_t *indev, lv_indev_data_t *data) {
-    esp_lcd_touch_handle_t tp = static_cast<esp_lcd_touch_handle_t>(lv_indev_get_user_data(indev));
+    esp_lcd_touch_handle_t tp =
+        static_cast<esp_lcd_touch_handle_t>(lv_indev_get_user_data(indev));
     esp_lcd_touch_point_data_t point;
     uint8_t cnt = 0;
     esp_lcd_touch_read_data(tp);
@@ -166,8 +170,8 @@ static esp_lcd_touch_handle_t example_bsp_init_touch_and_brightness(void) {
     i2c_master_bus_handle_t i2c_bus;
     i2c_master_bus_config_t bus_cfg = {
         .i2c_port = -1,
-        .sda_io_num = (gpio_num_t) EXAMPLE_PIN_NUM_TOUCH_SDA,
-        .scl_io_num = (gpio_num_t) EXAMPLE_PIN_NUM_TOUCH_SCL,
+        .sda_io_num = (gpio_num_t)EXAMPLE_PIN_NUM_TOUCH_SDA,
+        .scl_io_num = (gpio_num_t)EXAMPLE_PIN_NUM_TOUCH_SCL,
         .clk_source = I2C_CLK_SRC_DEFAULT,
         .glitch_ignore_cnt = 7,
         .flags = {.enable_internal_pullup = true},
@@ -385,7 +389,7 @@ extern "C" void app_main(void) {
     esp_lcd_panel_dev_config_t lcd_dev_config = {
         .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB,
         .bits_per_pixel = 24,
-        .reset_gpio_num = (gpio_num_t) EXAMPLE_PIN_NUM_LCD_RST,
+        .reset_gpio_num = (gpio_num_t)EXAMPLE_PIN_NUM_LCD_RST,
         .vendor_config = &vendor_config,
     };
     ESP_ERROR_CHECK(esp_lcd_new_panel_jd9365(mipi_dbi_io, &lcd_dev_config,
@@ -515,7 +519,8 @@ extern "C" void app_main(void) {
     lv_obj_remove_style_all(fill);
     lv_obj_set_size(fill, LV_PCT(100), LV_PCT(100));
     lv_obj_set_style_bg_opa(fill, LV_OPA_COVER, 0);
-    lv_obj_add_flag(fill, static_cast<lv_obj_flag_t>(LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_CLICKABLE));
+    lv_obj_add_flag(fill, static_cast<lv_obj_flag_t>(LV_OBJ_FLAG_HIDDEN |
+                                                     LV_OBJ_FLAG_CLICKABLE));
     lv_obj_add_event_cb(fill, example_fill_test_cb, LV_EVENT_CLICKED, fill);
 
     lv_obj_t *fill_btn = lv_button_create(lv_layer_top());
@@ -526,4 +531,7 @@ extern "C" void app_main(void) {
     _lock_release(&lvgl_api_lock);
 
     bridge_ble_init();
+
+    static Ethernet eth = Ethernet();
+    eth.init();
 }

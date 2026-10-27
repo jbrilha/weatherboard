@@ -84,6 +84,20 @@ dependencies:
       registry_url: https://components.espressif.com
       type: service
     version: 1.5.2
+  espressif/ip101:
+    component_hash: ca74de570dda7c2e79ce501b935638b2957fd9ac42424ed30d854f1962970471
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=6.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    targets:
+    - esp32
+    - esp32p4
+    - esp32s31
+    version: 1.1.0
   idf:
     source:
       type: idf
@@ -143,9 +157,10 @@ direct_dependencies:
 - espressif/esp_hosted
 - espressif/esp_lcd_touch_gt911
 - espressif/esp_lvgl_port
+- espressif/ip101
 - idf
 - lvgl/lvgl
 - waveshare/esp_lcd_jd9365_10_1
-manifest_hash: 4212062fe5905f7d28fc5a1aeff1f9ef4da59c7964423d2b1696f24291120a8f
+manifest_hash: 517983d945a0db1ba17ef14dcafd707cf0ea40a49ad6fc9ca1fd61bb4acab348
 target: esp32p4
 version: 3.0.0
