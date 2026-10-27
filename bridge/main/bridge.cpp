@@ -12,6 +12,7 @@
 #include "esp_lcd_jd9365_10_1.h"
 #include "esp_lcd_mipi_dsi.h"
 #include "esp_lcd_panel_ops.h"
+#include "esp_lcd_touch.h"
 #include "esp_lcd_touch_gt911.h"
 #include "esp_ldo_regulator.h"
 #include "esp_log.h"
@@ -20,6 +21,7 @@
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "host/ble_hs.h"
+#include "include/lvgl/core/lv_obj_style.h"
 #include "lvgl.h"
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
@@ -109,7 +111,7 @@ void example_rounder_flush_area_cb(lv_event_t *event) {
 
 static void example_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area,
                                   uint8_t *px_map) {
-    esp_lcd_panel_handle_t panel_handle = lv_display_get_user_data(disp);
+    esp_lcd_panel_handle_t panel_handle = static_cast<esp_lcd_panel_handle_t>(lv_display_get_user_data(disp));
     int offsetx1 = area->x1;
     int offsetx2 = area->x2;
     int offsety1 = area->y1;
@@ -120,7 +122,7 @@ static void example_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area,
 }
 
 static void example_lvgl_touch_cb(lv_indev_t *indev, lv_indev_data_t *data) {
-    esp_lcd_touch_handle_t tp = lv_indev_get_user_data(indev);
+    esp_lcd_touch_handle_t tp = static_cast<esp_lcd_touch_handle_t>(lv_indev_get_user_data(indev));
     esp_lcd_touch_point_data_t point;
     uint8_t cnt = 0;
     esp_lcd_touch_read_data(tp);
@@ -148,11 +150,11 @@ static void example_brightness_slider_cb(lv_event_t *e) {
 }
 
 static void example_fill_test_cb(lv_event_t *e) {
-    lv_obj_t *fill = lv_event_get_user_data(e);
+    lv_obj_t *fill = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
     if (lv_obj_has_flag(fill, LV_OBJ_FLAG_HIDDEN)) {
         lv_obj_set_style_bg_color(fill, lv_color_white(), 0);
         lv_obj_remove_flag(fill, LV_OBJ_FLAG_HIDDEN);
-    } else if (lv_color_eq(lv_obj_get_style_bg_color(fill, 0),
+    } else if (lv_color_eq(lv_obj_get_style_bg_color(fill, LV_PART_MAIN),
                            lv_color_white())) {
         lv_obj_set_style_bg_color(fill, lv_color_black(), 0);
     } else {
@@ -164,11 +166,11 @@ static esp_lcd_touch_handle_t example_bsp_init_touch_and_brightness(void) {
     i2c_master_bus_handle_t i2c_bus;
     i2c_master_bus_config_t bus_cfg = {
         .i2c_port = -1,
-        .sda_io_num = EXAMPLE_PIN_NUM_TOUCH_SDA,
-        .scl_io_num = EXAMPLE_PIN_NUM_TOUCH_SCL,
+        .sda_io_num = (gpio_num_t) EXAMPLE_PIN_NUM_TOUCH_SDA,
+        .scl_io_num = (gpio_num_t) EXAMPLE_PIN_NUM_TOUCH_SCL,
         .clk_source = I2C_CLK_SRC_DEFAULT,
         .glitch_ignore_cnt = 7,
-        .flags.enable_internal_pullup = true,
+        .flags = {.enable_internal_pullup = true},
     };
     ESP_ERROR_CHECK(i2c_new_master_bus(&bus_cfg, &i2c_bus));
 
@@ -319,7 +321,7 @@ static void bridge_ble_init(void) {
     nimble_port_freertos_init(bridge_ble_host_task);
 }
 
-void app_main(void) {
+extern "C" void app_main(void) {
 #if CONFIG_EXAMPLE_MONITOR_REFRESH_BY_GPIO
     example_bsp_init_refresh_monitor_io();
 #endif
@@ -359,31 +361,31 @@ void app_main(void) {
             {
                 .h_size = EXAMPLE_MIPI_DSI_LCD_H_RES,
                 .v_size = EXAMPLE_MIPI_DSI_LCD_V_RES,
-                .hsync_back_porch = EXAMPLE_MIPI_DSI_LCD_HBP,
                 .hsync_pulse_width = EXAMPLE_MIPI_DSI_LCD_HSYNC,
+                .hsync_back_porch = EXAMPLE_MIPI_DSI_LCD_HBP,
                 .hsync_front_porch = EXAMPLE_MIPI_DSI_LCD_HFP,
-                .vsync_back_porch = EXAMPLE_MIPI_DSI_LCD_VBP,
                 .vsync_pulse_width = EXAMPLE_MIPI_DSI_LCD_VSYNC,
+                .vsync_back_porch = EXAMPLE_MIPI_DSI_LCD_VBP,
                 .vsync_front_porch = EXAMPLE_MIPI_DSI_LCD_VFP,
             },
     };
 
     jd9365_vendor_config_t vendor_config = {
-        .flags =
-            {
-                .use_mipi_interface = 1,
-            },
         .mipi_config =
             {
                 .dsi_bus = mipi_dsi_bus,
                 .dpi_config = &dpi_config,
                 .lane_num = EXAMPLE_MIPI_DSI_LANE_NUM,
             },
+        .flags =
+            {
+                .use_mipi_interface = 1,
+            },
     };
     esp_lcd_panel_dev_config_t lcd_dev_config = {
-        .reset_gpio_num = EXAMPLE_PIN_NUM_LCD_RST,
         .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB,
         .bits_per_pixel = 24,
+        .reset_gpio_num = (gpio_num_t) EXAMPLE_PIN_NUM_LCD_RST,
         .vendor_config = &vendor_config,
     };
     ESP_ERROR_CHECK(esp_lcd_new_panel_jd9365(mipi_dbi_io, &lcd_dev_config,
@@ -513,7 +515,7 @@ void app_main(void) {
     lv_obj_remove_style_all(fill);
     lv_obj_set_size(fill, LV_PCT(100), LV_PCT(100));
     lv_obj_set_style_bg_opa(fill, LV_OPA_COVER, 0);
-    lv_obj_add_flag(fill, LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_flag(fill, static_cast<lv_obj_flag_t>(LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_CLICKABLE));
     lv_obj_add_event_cb(fill, example_fill_test_cb, LV_EVENT_CLICKED, fill);
 
     lv_obj_t *fill_btn = lv_button_create(lv_layer_top());

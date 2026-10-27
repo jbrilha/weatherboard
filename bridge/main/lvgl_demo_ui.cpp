@@ -69,7 +69,7 @@ static lv_obj_t *create_scale_box(lv_obj_t *parent, const char *text1,
 }
 
 static void scale1_indic1_anim_cb(void *var, int32_t v) {
-    lv_arc_set_value(var, v);
+    lv_arc_set_value(static_cast<lv_obj_t*>(var), v);
 
     lv_obj_t *card = lv_obj_get_parent(scale1);
     lv_obj_t *label = lv_obj_get_child(card, -5);
@@ -77,7 +77,7 @@ static void scale1_indic1_anim_cb(void *var, int32_t v) {
 }
 
 static void scale1_indic2_anim_cb(void *var, int32_t v) {
-    lv_arc_set_value(var, v);
+    lv_arc_set_value(static_cast<lv_obj_t*>(var), v);
 
     lv_obj_t *card = lv_obj_get_parent(scale1);
     lv_obj_t *label = lv_obj_get_child(card, -3);
@@ -85,7 +85,7 @@ static void scale1_indic2_anim_cb(void *var, int32_t v) {
 }
 
 static void scale1_indic3_anim_cb(void *var, int32_t v) {
-    lv_arc_set_value(var, v);
+    lv_arc_set_value(static_cast<lv_obj_t*>(var), v);
 
     lv_obj_t *card = lv_obj_get_parent(scale1);
     lv_obj_t *label = lv_obj_get_child(card, -1);
