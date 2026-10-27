@@ -92,6 +92,7 @@ impl WeatherService {
                     fetched_at: jiff::Timestamp::now().as_second(),
                 })));
                 *self.last_error.lock().unwrap() = None;
+                tracing::info!("weather refreshed");
                 Ok(())
             }
             Err(err) => {
