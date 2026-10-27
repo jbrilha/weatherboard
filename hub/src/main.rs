@@ -13,6 +13,7 @@ use common::{MAX_PAYLOAD_LEN, Message, ToBoard, display_service_uuid, weather_pa
 use futures::stream::StreamExt;
 use std::time::Duration;
 use tokio::sync::watch;
+use tracing::{info, warn};
 
 use crate::ipc::IpcService;
 
@@ -28,7 +29,7 @@ async fn forward(
     latest: &mut watch::Receiver<Option<WeatherPayload>>,
 ) -> anyhow::Result<()> {
     peripheral.connect().await?;
-    println!("Connected");
+    info!("Connected");
 
     peripheral.discover_services().await?;
     let ch = peripheral
@@ -49,7 +50,7 @@ async fn forward(
         peripheral
             .write(&ch, bytes, WriteType::WithResponse)
             .await?;
-        println!("Sent payload ({} bytes)", bytes.len());
+        info!("Sent payload ({} bytes)", bytes.len());
     }
 }
 
@@ -60,7 +61,6 @@ async fn main() -> anyhow::Result<()> {
     let (tx, mut latest) = watch::channel(None);
     let ipc = IpcService::default(tx).await;
     tokio::spawn(ipc.run());
-    println!("ipc");
 
     let manager = Manager::new().await?;
 
@@ -69,7 +69,7 @@ async fn main() -> anyhow::Result<()> {
     let central = get_central(&manager).await;
 
     let central_state = central.adapter_state().await.unwrap();
-    println!("CentralState: {:?}", central_state);
+    info!("CentralState: {:?}", central_state);
 
     // Each adapter has an event stream, we fetch via events(),
     // simplifying the type, this will return what is essentially a
@@ -98,41 +98,41 @@ async fn main() -> anyhow::Result<()> {
                     .and_then(|p| p.local_name)
                     .map(|local_name| format!("Name: {local_name}"))
                     .unwrap_or_default();
-                println!("Found board: {:?} {}", id, name);
+                info!("Found board: {:?} {}", id, name);
 
                 central.stop_scan().await?;
                 if let Err(e) = forward(&peripheral, &mut latest).await {
-                    println!("board link lost: {e:#}");
+                    warn!("board link lost: {e:#}");
                     peripheral.disconnect().await.ok();
                     tokio::time::sleep(RECONNECT_DELAY).await;
                     central.start_scan(filter.clone()).await?;
                 }
             }
             CentralEvent::StateUpdate(state) => {
-                println!("AdapterStatusUpdate {:?}", state);
+                info!("AdapterStatusUpdate {:?}", state);
             }
             CentralEvent::DeviceConnected(id) => {
-                println!("DeviceConnected: {:?}", id);
+                info!("DeviceConnected: {:?}", id);
             }
             CentralEvent::DeviceDisconnected(id) => {
-                println!("DeviceDisconnected: {:?}", id);
+                warn!("DeviceDisconnected: {:?}", id);
             }
             CentralEvent::ManufacturerDataAdvertisement {
                 id,
                 manufacturer_data,
             } => {
-                println!(
+                info!(
                     "ManufacturerDataAdvertisement: {:?}, {:?}",
                     id, manufacturer_data
                 );
             }
             CentralEvent::ServiceDataAdvertisement { id, service_data } => {
-                println!("ServiceDataAdvertisement: {:?}, {:?}", id, service_data);
+                info!("ServiceDataAdvertisement: {:?}, {:?}", id, service_data);
             }
             CentralEvent::ServicesAdvertisement { id, services } => {
                 let services: Vec<String> =
                     services.into_iter().map(|s| s.to_short_string()).collect();
-                println!("ServicesAdvertisement: {:?}, {:?}", id, services);
+                info!("ServicesAdvertisement: {:?}, {:?}", id, services);
             }
             _ => {}
         }
