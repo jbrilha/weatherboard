@@ -83,7 +83,20 @@ impl WeatherService {
         let fetched = tokio::try_join!(
             self.client.fetch(&self.daily_request),
             self.fetch_paged(&self.hourly_request),
-        );
+        )
+        .and_then(|(daily, hourly)| {
+            anyhow::ensure!(
+                daily.data.len() >= 7,
+                "daily timeline too short: {} entries",
+                daily.data.len()
+            );
+            anyhow::ensure!(
+                hourly.data.len() >= 7,
+                "hourly timeline too short: {} entries",
+                hourly.data.len()
+            );
+            Ok((daily, hourly))
+        });
         match fetched {
             Ok((daily, hourly)) => {
                 self.latest.send_replace(Some(Arc::new(Snapshot {
