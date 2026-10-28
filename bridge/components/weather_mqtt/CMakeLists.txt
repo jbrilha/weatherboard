@@ -1,4 +1,4 @@
-idf_component_register(SRCS "mqtt.cpp"
+idf_component_register(SRCS "weather_mqtt.cpp"
                     INCLUDE_DIRS "."
                     PRIV_REQUIRES mqtt
 )
