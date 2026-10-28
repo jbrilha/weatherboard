@@ -5,6 +5,11 @@
 #include "esp_log.h"
 #include "esp_netif.h"
 
+static constexpr int32_t PHY_ADDR = 1;
+static constexpr int RESET_GPIO_NUM = 51;
+static constexpr int MDC_NUM = 31;
+static constexpr int MDIO_NUM = 52;
+
 static constexpr char TAG[] = "Ethernet";
 
 static void eth_event_handler(void *arg, esp_event_base_t event_base,
@@ -101,11 +106,11 @@ esp_eth_handle_t Ethernet::init_internal(void) {
     eth_mac_config_t mac_config = ETH_MAC_DEFAULT_CONFIG();
     eth_phy_config_t phy_config = ETH_PHY_DEFAULT_CONFIG();
 
-    phy_config.phy_addr = 1;
-    phy_config.reset_gpio_num = 51;
+    phy_config.phy_addr = PHY_ADDR;
+    phy_config.reset_gpio_num = RESET_GPIO_NUM;
     eth_esp32_emac_config_t esp32_emac_config = ETH_ESP32_EMAC_DEFAULT_CONFIG();
-    esp32_emac_config.smi_gpio.mdc_num = 31;
-    esp32_emac_config.smi_gpio.mdio_num = 52;
+    esp32_emac_config.smi_gpio.mdc_num = MDC_NUM;
+    esp32_emac_config.smi_gpio.mdio_num = MDC_NUM;
 
     this->mac = esp_eth_mac_new_esp32(&esp32_emac_config, &mac_config);
     this->phy = esp_eth_phy_new_ip101(&phy_config);
