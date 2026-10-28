@@ -3,3 +3,4 @@ managed_components/
 sdkconfig
 sdkconfig.old
 ESP32-P4-Platform/
+compile_commands.json

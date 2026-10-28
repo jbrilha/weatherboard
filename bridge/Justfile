@@ -1,0 +1,29 @@
+[private]
+idf_py *args:
+    #!/bin/sh
+    command -v idf.py >/dev/null 2>&1 || . "$HOME/esp/esp-idf-v6.1/export.sh"
+    exec idf.py {{args}}
+
+all: build flash monitor
+
+build:
+    @just idf_py build
+    ln -sf build/compile_commands.json compile_commands.json
+
+flash:
+    @just idf_py flash
+
+monitor:
+    @just idf_py monitor
+
+menuconfig:
+    @just idf_py menuconfig
+
+set-target:
+    @just idf_py set-target esp32p4
+
+fullclean:
+    @just idf_py fullclean
+
+clean:
+    rm -rf build
