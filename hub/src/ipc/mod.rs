@@ -1,8 +1,8 @@
 use std::time::Duration;
 
-use common::{MAX_PAYLOAD_LEN, Message};
 use common::ipc::{HUB_SOCKET, ToHub, ToServer};
 use common::weather::WeatherPayload;
+use common::{MAX_PAYLOAD_LEN, Message};
 use futures::SinkExt;
 use futures::stream::StreamExt;
 use tokio::net::UnixStream;
@@ -21,16 +21,16 @@ pub struct IpcService {
 }
 
 impl IpcService {
-    pub fn new(socket: FramedSock, latest: watch::Sender<Option<WeatherPayload>>) -> Self {
+    pub fn new(socket: Option<FramedSock>, latest: watch::Sender<Option<WeatherPayload>>) -> Self {
         Self {
-            socket: Some(socket),
+            socket: socket,
             latest,
         }
     }
 
     pub async fn default(latest: watch::Sender<Option<WeatherPayload>>) -> Self {
         let socket = try_connect().await;
-        Self { socket, latest }
+        IpcService::new(socket, latest)
     }
 
     pub async fn run(mut self) -> anyhow::Result<()> {

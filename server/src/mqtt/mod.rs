@@ -6,7 +6,6 @@ use std::{
 };
 use tokio_util::bytes::Bytes;
 
-use anyhow::Ok;
 use common::{MAX_PAYLOAD_LEN, Message, ToBoard, mqtt::WEATHER_TOPIC};
 use rumqttd::{
     Broker, Config, ConnectionSettings, Notification, RouterConfig, ServerSettings,
