@@ -17,7 +17,7 @@
 static constexpr char TAG[] = "Display";
 
 // 80000000/(20+20+40+800)/(4+10+30+1280) = 68Hz
-static constexpr uint32_t MIPI_DSI_DPI_CLK_MHZ = 80;
+static constexpr uint32_t MIPI_DSI_DPI_CLK_MHZ = 70;
 static constexpr uint32_t MIPI_DSI_LCD_HSYNC = 20;
 static constexpr uint32_t MIPI_DSI_LCD_HBP = 20;
 static constexpr uint32_t MIPI_DSI_LCD_HFP = 40;

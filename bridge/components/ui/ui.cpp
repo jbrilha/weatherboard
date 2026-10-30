@@ -14,7 +14,7 @@
 static constexpr char TAG[] = "UI";
 
 // number of display lines in each draw buffer
-static constexpr uint32_t LVGL_DRAW_BUF_LINES = (MIPI_DSI_LCD_V_RES / 32);
+static constexpr uint32_t LVGL_DRAW_BUF_LINES = (MIPI_DSI_LCD_V_RES / 64);
 static constexpr uint64_t LVGL_TICK_PERIOD_MS = 2;
 static constexpr uint32_t LVGL_TASK_STACK_SIZE = (4 * 1024);
 static constexpr uint32_t LVGL_TASK_PRIORITY = 2;

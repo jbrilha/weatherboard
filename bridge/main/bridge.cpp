@@ -67,10 +67,10 @@ static void bridge_ble_init(void) {
 }
 
 extern "C" void app_main(void) {
-    // bridge_ble_init();
-    //
-    // static Ethernet eth = Ethernet();
-    // eth.init();
+    bridge_ble_init();
+
+    static Ethernet eth = Ethernet();
+    eth.init();
 
     static UI ui = UI();
     if (ui.init() == ESP_OK) {
