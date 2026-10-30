@@ -3,13 +3,13 @@ use std::{
     net::{Ipv4Addr, SocketAddr},
 };
 
+use common::mqtt::WEATHER_TOPIC;
 use rumqttd::{Broker, Config, ConnectionSettings, RouterConfig, ServerSettings};
 
 const BROKER_ID: usize = 0;
 const HOST: Ipv4Addr = Ipv4Addr::UNSPECIFIED;
 const PORT: u16 = 1883;
 const SERVER_NAME: &str = "v4-1";
-const WEATHER_TOPIC: &str = "weatherboard/weather";
 
 const MAX_CONNECTIONS: usize = 5;
 const MAX_OUTGOING_PACKET_COUNT: u64 = 100;

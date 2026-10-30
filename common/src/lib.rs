@@ -1,6 +1,7 @@
 #![no_std]
 
 pub mod ipc;
+pub mod mqtt;
 pub mod weather;
 
 use serde::{Deserialize, Serialize};

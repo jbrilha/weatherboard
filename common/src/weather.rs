@@ -226,60 +226,34 @@ impl WeatherPayload {
     }
 
     pub fn default() -> Self {
-        let forecast = [
-            DayForecast {
-                condition: Condition::Sunny,
-                low_c: 10,
-                high_c: 30,
-            },
-            DayForecast {
-                condition: Condition::Sunny,
-                low_c: 10,
-                high_c: 30,
-            },
-            DayForecast {
-                condition: Condition::Sunny,
-                low_c: 10,
-                high_c: 30,
-            },
-            DayForecast {
-                condition: Condition::Sunny,
-                low_c: 10,
-                high_c: 30,
-            },
-            DayForecast {
-                condition: Condition::Sunny,
-                low_c: 10,
-                high_c: 30,
-            },
-            DayForecast {
-                condition: Condition::Sunny,
-                low_c: 10,
-                high_c: 30,
-            },
-        ];
+        let day = DayForecast {
+            condition: Condition::Sunny,
+            low_c: 10,
+            high_c: 30,
+        };
+        let forecast = [day, day, day, day, day, day];
         Self {
             location: Location::Lisbon,
             week_day: Day::Sunday,
             month: Month::October,
             day: 18,
-            updated: (12, 0),
+            updated: (0, 0),
             condition: Condition::Sunny,
-            temp_c: 25,
-            feels_like_c: 26,
-            sunrise: (7, 15),
-            sunset: (18, 55),
-            wind_kmh: 19,
-            humidity_pct: 65,
-            pressure_hpa: 1234,
-            uvi_tenths: 12,
-            dew_point_c: 11,
+            temp_c: 0,
+            feels_like_c: 0,
+            sunrise: (0, 0),
+            sunset: (0, 0),
+            wind_kmh: 0,
+            humidity_pct: 0,
+            pressure_hpa: 0,
+            uvi_tenths: 0,
+            dew_point_c: 0,
             rain_pct: 0,
-            chart_low_c: 18,
-            chart_high_c: 34,
-            chart_start_hour: (7),
-            chart_temps_c: [18, 19, 21, 24, 27, 30, 32, 34, 31, 27, 23, 20],
-            chart_pop_pct: [0, 0, 5, 10, 20, 40, 60, 40, 20, 10, 0, 0],
+            chart_low_c: 0,
+            chart_high_c: 0,
+            chart_start_hour: 0,
+            chart_temps_c: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            chart_pop_pct: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             forecast,
         }
     }
