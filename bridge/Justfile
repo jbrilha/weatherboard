@@ -27,3 +27,9 @@ fullclean:
 
 clean:
     rm -rf build
+
+lvgl-sim:
+    cmake -S sim -B sim/build
+    cmake --build sim/build -j
+    ln -sf build/compile_commands.json sim/compile_commands.json
+    ./sim/build/sim
