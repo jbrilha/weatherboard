@@ -17,7 +17,7 @@ const RECONNECT_DELAY: Duration = Duration::from_secs(5);
 
 pub struct BleService {
     central: Adapter,
-    latest: Receiver<Option<WeatherPayload>>,
+    receiver: Receiver<Option<WeatherPayload>>,
 }
 
 async fn get_central(manager: &Manager) -> Adapter {
@@ -56,8 +56,8 @@ async fn forward(
 }
 
 impl BleService {
-    pub fn new(central: Adapter, latest: watch::Receiver<Option<WeatherPayload>>) -> Self {
-        Self { central, latest }
+    pub fn new(central: Adapter, receiver: watch::Receiver<Option<WeatherPayload>>) -> Self {
+        Self { central, receiver }
     }
 
     pub async fn default(latest: watch::Receiver<Option<WeatherPayload>>) -> anyhow::Result<Self> {
@@ -95,7 +95,7 @@ impl BleService {
                     info!("Found board: {:?} {}", id, name);
 
                     self.central.stop_scan().await?;
-                    if let Err(e) = forward(&peripheral, &mut self.latest).await {
+                    if let Err(e) = forward(&peripheral, &mut self.receiver).await {
                         warn!("board link lost: {e:#}");
                         peripheral.disconnect().await.ok();
                         tokio::time::sleep(RECONNECT_DELAY).await;

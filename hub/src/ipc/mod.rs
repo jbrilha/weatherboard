@@ -28,9 +28,9 @@ impl IpcService {
         }
     }
 
-    pub async fn default(latest: watch::Sender<Option<WeatherPayload>>) -> Self {
+    pub async fn default(sender: watch::Sender<Option<WeatherPayload>>) -> Self {
         let socket = try_connect().await;
-        IpcService::new(socket, latest)
+        IpcService::new(socket, sender)
     }
 
     pub async fn run(mut self) -> anyhow::Result<()> {
@@ -40,6 +40,7 @@ impl IpcService {
                     match request(socket).await {
                         Ok(frame) => match ToHub::decode(&frame) {
                             Ok(ToHub::Weather(payload)) => {
+                                info!("ipc payload received: {payload:?}");
                                 self.latest.send_if_modified(|current| {
                                     let changed = *current != Some(payload);
                                     *current = Some(payload);
