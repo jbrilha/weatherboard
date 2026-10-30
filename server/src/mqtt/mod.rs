@@ -1,10 +1,18 @@
 use std::{
     collections::HashMap,
     net::{Ipv4Addr, SocketAddr},
+    thread,
 };
+use tokio_util::bytes::Bytes;
 
+use anyhow::Ok;
 use common::mqtt::WEATHER_TOPIC;
-use rumqttd::{Broker, Config, ConnectionSettings, RouterConfig, ServerSettings};
+use rumqttd::{
+    Broker, Config, ConnectionSettings, Notification, RouterConfig, ServerSettings,
+    protocol::{Packet, Publish},
+};
+use tokio::time;
+use tracing::{error, info};
 
 const BROKER_ID: usize = 0;
 const HOST: Ipv4Addr = Ipv4Addr::UNSPECIFIED;
@@ -69,5 +77,26 @@ impl MqttService {
 
         let broker = Broker::new(config);
         Ok(MqttService::new(broker))
+    }
+
+    pub async fn run(mut self) -> anyhow::Result<()> {
+        let (mut link_tx, mut _link_rx) = self.broker.link("server")?;
+        std::thread::spawn(move || {
+            if self.broker.start().is_err() {
+                error!("Failed to start MQTT broker");
+            }
+        });
+        loop {
+            let payload = vec![0u8; 1_000];
+            let publish = Publish::new(
+                Bytes::from_static(WEATHER_TOPIC.as_bytes()),
+                Bytes::from(payload),
+                true,
+            );
+            link_tx.send(Packet::Publish(publish, None)).await?;
+
+            info!("published");
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        }
     }
 }
