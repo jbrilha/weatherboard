@@ -1,4 +1,5 @@
 mod ipc;
+mod mqtt;
 mod weather;
 mod web;
 

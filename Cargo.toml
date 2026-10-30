@@ -26,6 +26,8 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 strum = { version = "0.28.0",  default-features = false, features = ["derive"] }
 enum-iterator = "2.3.0"
+rumqttc = "0.25.1"
+rumqttd = "0.20.0"
 
 [profile.release]
 debug = 2

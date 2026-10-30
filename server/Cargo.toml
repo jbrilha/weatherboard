@@ -20,6 +20,7 @@ tower-http = { version = "0.7.1", features = ["fs", "trace"] }
 tower-livereload = { version = "0.10.3", optional = true }
 tracing.workspace = true
 tracing-subscriber.workspace = true
+rumqttd.workspace = true
 
 [features]
 livereload = ["dep:tower-livereload"]

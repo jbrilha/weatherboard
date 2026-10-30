@@ -16,3 +16,4 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 btleplug = { version = "0.13.5", features = ["serde"] }
 futures.workspace = true
+rumqttc.workspace = true
