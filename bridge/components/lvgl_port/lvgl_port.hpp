@@ -7,10 +7,10 @@
 #include "freertos/task.h"
 #include "lvgl.h"
 
-class UI {
+class LVGLPort {
   public:
-    UI();
-    ~UI();
+    LVGLPort();
+    ~LVGLPort();
 
     esp_err_t init(void);
     void draw_example(void);

@@ -33,7 +33,7 @@
 #include <unistd.h>
 
 #include "lvgl_demo_ui.hpp"
-#include "ui.hpp"
+#include "lvgl_port.hpp"
 
 static constexpr char TAG[] = "bridge";
 
@@ -72,8 +72,8 @@ extern "C" void app_main(void) {
     static Ethernet eth = Ethernet();
     eth.init();
 
-    static UI ui = UI();
-    if (ui.init() == ESP_OK) {
-        ui.draw_example();
+    static LVGLPort lvgl_port = LVGLPort();
+    if (lvgl_port.init() == ESP_OK) {
+        lvgl_port.draw_example();
     }
 }

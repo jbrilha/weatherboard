@@ -1,2 +1,2 @@
 dependencies:
-  lvgl/lvgl: "*"
+  lvgl/lvgl: "9.6.0"

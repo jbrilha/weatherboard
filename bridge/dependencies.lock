@@ -99,7 +99,7 @@ dependencies:
       type: idf
     version: 6.1.0
   lvgl/lvgl:
-    component_hash: 7d82410747bbfb319531449749e940f440f8414f041f9eaba13f0d1dd7f58cdd
+    component_hash: d5e723db3a3feca71e34e333a6598b7624e3822577d374e1d44f0e18374952e1
     dependencies:
     - name: espressif/freetype
       registry_url: https://components.espressif.com
@@ -128,7 +128,7 @@ dependencies:
     source:
       registry_url: https://components.espressif.com/
       type: service
-    version: 9.6.0~1
+    version: 9.6.0
   waveshare/esp_lcd_jd9365_10_1:
     component_hash: 71ec315454a6d0dc628b589979ec5044f671e6f0a3126ec3b25f97a022c1bc05
     dependencies:
@@ -157,6 +157,6 @@ direct_dependencies:
 - idf
 - lvgl/lvgl
 - waveshare/esp_lcd_jd9365_10_1
-manifest_hash: 6184300b6c70e463c55c237d4453da148e5297ce4f1ff56fece8bea1778e62bb
+manifest_hash: a875c94b9812439b06f31b83f12ee5b4014237cdb91ddd5d548910a0994135e5
 target: esp32p4
 version: 3.0.0

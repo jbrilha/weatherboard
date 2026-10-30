@@ -1,4 +1,4 @@
-#include "ui.hpp"
+#include "lvgl_port.hpp"
 #include "display.hpp"
 #include "esp_err.h"
 #include "esp_heap_caps.h"
@@ -11,7 +11,7 @@
 
 #include <cassert>
 
-static constexpr char TAG[] = "UI";
+static constexpr char TAG[] = "LVGLPort";
 
 // number of display lines in each draw buffer
 static constexpr uint32_t LVGL_DRAW_BUF_LINES = (MIPI_DSI_LCD_V_RES / 64);
@@ -21,11 +21,11 @@ static constexpr uint32_t LVGL_TASK_PRIORITY = 2;
 static constexpr uint32_t LVGL_TASK_MAX_DELAY_MS = 500;
 static constexpr uint32_t LVGL_TASK_MIN_DELAY_MS = (1000 / CONFIG_FREERTOS_HZ);
 
-UI::UI()
+LVGLPort::LVGLPort()
     : lv_display(nullptr), lv_touch(nullptr), lv_cursor(nullptr),
       tick_timer(nullptr), lv_task(nullptr), buf1(nullptr), buf2(nullptr) {}
 
-UI::~UI() {
+LVGLPort::~LVGLPort() {
     if (tick_timer != nullptr) {
         esp_timer_stop(tick_timer);
         esp_timer_delete(tick_timer);
@@ -99,7 +99,7 @@ static void lvgl_port_task(void *arg) {
     }
 }
 
-esp_err_t UI::init() {
+esp_err_t LVGLPort::init() {
 
     ESP_ERROR_CHECK(display.init());
     esp_lcd_panel_handle_t panel = display.get_panel_handle();
@@ -181,7 +181,7 @@ static void example_fill_test_cb(lv_event_t *e) {
     }
 }
 
-void UI::draw_example(void) {
+void LVGLPort::draw_example(void) {
     lv_lock();
     example_lvgl_demo_ui(this->lv_display);
 
