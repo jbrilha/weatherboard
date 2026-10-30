@@ -31,8 +31,6 @@ static constexpr uint32_t MIPI_DSI_LANE_BITRATE_MBPS = 1500; // 1.5Gbps
 // LDO_VO3 is connected to VDD_MIPI_DPHY
 static constexpr uint32_t MIPI_DSI_PHY_PWR_LDO_CHAN = 3;
 static constexpr uint32_t MIPI_DSI_PHY_PWR_LDO_VOLTAGE_MV = 2500;
-static constexpr bool LCD_BK_LIGHT_ON_LEVEL = true;
-static constexpr bool LCD_BK_LIGHT_OFF_LEVEL = !LCD_BK_LIGHT_ON_LEVEL;
 
 static constexpr uint32_t GT911_ADDR = 0x5D;
 static constexpr uint32_t GT911_CLK_HZ = 100000;
@@ -49,7 +47,7 @@ Display::Display()
     bus_config = {
         .bus_id = 0,
         .num_data_lanes = MIPI_DSI_LANE_NUM,
-        .phy_clk_src = MIPI_DSI_PHY_CLK_SRC_DEFAULT,
+        .phy_clk_src = MIPI_DSI_PHY_PLLREF_CLK_SRC_DEFAULT,
         .lane_bit_rate_mbps = MIPI_DSI_LANE_BITRATE_MBPS,
         .flags = {},
     };
@@ -195,6 +193,8 @@ esp_err_t Display::init_panel(void) {
         esp_lcd_new_panel_io_dbi(mipi_dsi_bus, &dbi_config, &mipi_dbi_io));
     ESP_ERROR_CHECK(
         esp_lcd_new_panel_jd9365(mipi_dbi_io, &lcd_dev_config, &panel_handle));
+
+    ESP_ERROR_CHECK(esp_lcd_dpi_panel_enable_dma2d(panel_handle));
 
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));

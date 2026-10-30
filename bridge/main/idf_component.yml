@@ -1,8 +1,4 @@
 dependencies:
   idf:
     version: ">=6.1.0"
-  waveshare/esp_lcd_jd9365_10_1: "*"
-  espressif/esp_lcd_touch_gt911: "*"
-  espressif/esp_lvgl_port: "*"
-  lvgl/lvgl: "*"
   espressif/esp_hosted: "*"

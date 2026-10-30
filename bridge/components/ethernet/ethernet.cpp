@@ -110,7 +110,7 @@ esp_eth_handle_t Ethernet::init_internal(void) {
     phy_config.reset_gpio_num = RESET_GPIO_NUM;
     eth_esp32_emac_config_t esp32_emac_config = ETH_ESP32_EMAC_DEFAULT_CONFIG();
     esp32_emac_config.smi_gpio.mdc_num = MDC_NUM;
-    esp32_emac_config.smi_gpio.mdio_num = MDC_NUM;
+    esp32_emac_config.smi_gpio.mdio_num = MDIO_NUM;
 
     this->mac = esp_eth_mac_new_esp32(&esp32_emac_config, &mac_config);
     this->phy = esp_eth_phy_new_ip101(&phy_config);

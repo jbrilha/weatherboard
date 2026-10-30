@@ -13,6 +13,7 @@ class UI {
     ~UI();
 
     esp_err_t init(void);
+    void draw_example(void);
 
   private:
     Display display;

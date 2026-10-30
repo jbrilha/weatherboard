@@ -5,8 +5,8 @@
 #include "esp_lcd_panel_ops.h"
 #include "esp_log.h"
 #include "esp_timer.h"
-#include "include/lvgl/osal/lv_os.h"
 #include "lvgl.h"
+#include "lvgl_demo_ui.hpp"
 #include <sys/unistd.h>
 
 #include <cassert>
@@ -87,7 +87,7 @@ static void increase_lvgl_tick(void *arg) { lv_tick_inc(LVGL_TICK_PERIOD_MS); }
 static void lvgl_port_task(void *arg) {
     ESP_LOGI(TAG, "Starting LVGL task");
     uint32_t time_till_next_ms = 0;
-    while (1) {
+    while (true) {
         lv_lock();
         time_till_next_ms = lv_timer_handler();
         lv_unlock();
@@ -160,4 +160,51 @@ esp_err_t UI::init() {
                 LVGL_TASK_PRIORITY, &lv_task);
 
     return ESP_OK;
+}
+
+static void example_brightness_slider_cb(lv_event_t *e) {
+    auto *display = static_cast<Display *>(lv_event_get_user_data(e));
+
+    display->set_brightness(lv_slider_get_value(lv_event_get_target_obj(e)));
+}
+
+static void example_fill_test_cb(lv_event_t *e) {
+    lv_obj_t *fill = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
+    if (lv_obj_has_flag(fill, LV_OBJ_FLAG_HIDDEN)) {
+        lv_obj_set_style_bg_color(fill, lv_color_white(), 0);
+        lv_obj_remove_flag(fill, LV_OBJ_FLAG_HIDDEN);
+    } else if (lv_color_eq(lv_obj_get_style_bg_color(fill, LV_PART_MAIN),
+                           lv_color_white())) {
+        lv_obj_set_style_bg_color(fill, lv_color_black(), 0);
+    } else {
+        lv_obj_add_flag(fill, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+void UI::draw_example(void) {
+    lv_lock();
+    example_lvgl_demo_ui(this->lv_display);
+
+    lv_obj_t *slider = lv_slider_create(lv_layer_top());
+    lv_obj_set_width(slider, MIPI_DSI_LCD_H_RES * 3 / 4);
+    lv_obj_align(slider, LV_ALIGN_BOTTOM_MID, 0, -60);
+    lv_slider_set_range(slider, 10, 255);
+    lv_slider_set_value(slider, 255, LV_ANIM_OFF);
+    lv_obj_add_event_cb(slider, example_brightness_slider_cb,
+                        LV_EVENT_VALUE_CHANGED, &this->display);
+
+    lv_obj_t *fill = lv_obj_create(lv_layer_sys());
+    lv_obj_remove_style_all(fill);
+    lv_obj_set_size(fill, LV_PCT(100), LV_PCT(100));
+    lv_obj_set_style_bg_opa(fill, LV_OPA_COVER, 0);
+    lv_obj_add_flag(fill, static_cast<lv_obj_flag_t>(LV_OBJ_FLAG_HIDDEN |
+                                                     LV_OBJ_FLAG_CLICKABLE));
+    lv_obj_add_event_cb(fill, example_fill_test_cb, LV_EVENT_CLICKED, fill);
+
+    lv_obj_t *fill_btn = lv_button_create(lv_layer_top());
+    lv_obj_align(fill_btn, LV_ALIGN_TOP_RIGHT, -20, 20);
+    lv_label_set_text(lv_label_create(fill_btn), "Fill test");
+    lv_obj_add_event_cb(fill_btn, example_fill_test_cb, LV_EVENT_CLICKED, fill);
+
+    lv_unlock();
 }
