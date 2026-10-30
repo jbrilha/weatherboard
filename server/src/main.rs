@@ -10,7 +10,7 @@ use tracing_subscriber::EnvFilter;
 
 use weather::service::WeatherService;
 
-use crate::ipc::IpcService;
+use crate::{ipc::IpcService, mqtt::MqttService};
 
 const HOST: &str = "127.0.0.1";
 const PORT: &str = "3030";
@@ -28,6 +28,8 @@ async fn main() -> anyhow::Result<()> {
 
     let ipc = IpcService::default(weather.clone())?;
     tokio::spawn(ipc.run());
+
+    let mqtt = MqttService::default()?;
 
     let app = web::router()
         .with_state(weather)

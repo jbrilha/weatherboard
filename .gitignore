@@ -8,3 +8,4 @@ datasheets/
 *.md
 !README.md
 WeActStudio.EpaperModule/
+rumqtt/
