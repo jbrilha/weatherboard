@@ -29,7 +29,7 @@ async fn main() -> anyhow::Result<()> {
     let ipc = IpcService::default(weather.clone())?;
     tokio::spawn(ipc.run());
 
-    let mqtt = MqttService::default()?;
+    let mqtt = MqttService::default(weather.clone())?;
     tokio::spawn(mqtt.run());
 
     let app = web::router()

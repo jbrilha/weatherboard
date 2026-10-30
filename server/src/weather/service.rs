@@ -3,13 +3,15 @@ use std::{
     time::Duration,
 };
 
-use common::weather::Location;
+use common::weather::{Location, WeatherPayload};
 use serde::de::DeserializeOwned;
 use tokio::sync::watch;
+use tracing::warn;
 
 use crate::weather::{
     WeatherParams,
     openweathermap::{Forecast, Forecast1Day, Forecast1Hour, OpenCallEndpoint, Units},
+    payload::{fill_chart, fill_daily},
 };
 
 use super::{WeatherRequest, client::WeatherClient};
@@ -115,6 +117,37 @@ impl WeatherService {
         }
     }
 
+    pub fn payload(&self) -> Option<WeatherPayload> {
+        let snapshot = self.latest()?;
+        let (daily, hourly) = (&snapshot.daily, &snapshot.hourly);
+        let now = jiff::Timestamp::now().as_second();
+        let mut payload = WeatherPayload::default();
+        if !fill_daily(
+            &mut payload,
+            daily,
+            self.location(),
+            now,
+            snapshot.fetched_at,
+        ) {
+            warn!(
+                "not enough daily data: {} entries, first dt {:?}, now {now}",
+                daily.data.len(),
+                daily.data.first().map(|d| d.dt),
+            );
+            return None;
+        }
+        if !fill_chart(&mut payload, hourly, now) {
+            warn!(
+                "not enough hourly data for the chart: {} entries, first dt {:?}, last dt {:?}, now {now}",
+                hourly.data.len(),
+                hourly.data.first().map(|h| h.dt),
+                hourly.data.last().map(|h| h.dt),
+            );
+            return None;
+        }
+        Some(payload)
+    }
+
     pub async fn run(self: Arc<Self>) {
         loop {
             let delay = match self.refresh().await {
@@ -126,5 +159,9 @@ impl WeatherService {
             };
             tokio::time::sleep(delay).await;
         }
+    }
+
+    pub fn subscribe(&self) -> watch::Receiver<Option<Arc<Snapshot>>> {
+        self.latest.subscribe()
     }
 }
