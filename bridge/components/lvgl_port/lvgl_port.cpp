@@ -15,7 +15,7 @@ static constexpr char TAG[] = "LVGLPort";
 // number of display lines in each draw buffer
 static constexpr uint32_t LVGL_DRAW_BUF_LINES = (MIPI_DSI_LCD_V_RES / 64);
 static constexpr uint64_t LVGL_TICK_PERIOD_MS = 2;
-static constexpr uint32_t LVGL_TASK_STACK_SIZE = (4 * 1024);
+static constexpr uint32_t LVGL_TASK_STACK_SIZE = (8 * 1024);
 static constexpr uint32_t LVGL_TASK_PRIORITY = 2;
 static constexpr uint32_t LVGL_TASK_MAX_DELAY_MS = 500;
 static constexpr uint32_t LVGL_TASK_MIN_DELAY_MS = (1000 / CONFIG_FREERTOS_HZ);
@@ -86,10 +86,17 @@ static void increase_lvgl_tick(void *arg) { lv_tick_inc(LVGL_TICK_PERIOD_MS); }
 static void lvgl_port_task(void *arg) {
     ESP_LOGI(TAG, "Starting LVGL task");
     uint32_t time_till_next_ms = 0;
+    UBaseType_t lowest_free = UINT32_MAX;
     while (true) {
         lv_lock();
         time_till_next_ms = lv_timer_handler();
         lv_unlock();
+        UBaseType_t free_bytes = uxTaskGetStackHighWaterMark(nullptr);
+        if (free_bytes < lowest_free) {
+            lowest_free = free_bytes;
+            ESP_LOGI(TAG, "LVGL stack: %u of %" PRIu32 " bytes free at lowest",
+                     free_bytes, LVGL_TASK_STACK_SIZE);
+        }
         // in case of triggering a task watch dog time out
         time_till_next_ms = MAX(time_till_next_ms, LVGL_TASK_MIN_DELAY_MS);
         // in case of lvgl display not ready yet
