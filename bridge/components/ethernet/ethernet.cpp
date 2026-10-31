@@ -82,9 +82,6 @@ esp_err_t Ethernet::init(void) {
         return ESP_ERR_INVALID_STATE;
     }
 
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-
     esp_netif_config_t cfg = ESP_NETIF_DEFAULT_ETH();
     this->netif = esp_netif_new(&cfg);
     this->netif_glue = esp_eth_new_netif_glue(this->handle);

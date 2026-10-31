@@ -8,6 +8,7 @@
 #include "driver/i2c_master.h"
 #include "esp_efuse.h"
 #include "esp_err.h"
+#include "esp_event.h"
 #include "esp_hosted_bt_host_stack.h"
 #include "esp_lcd_jd9365_10_1.h"
 #include "esp_lcd_mipi_dsi.h"
@@ -16,6 +17,7 @@
 #include "esp_lcd_touch_gt911.h"
 #include "esp_ldo_regulator.h"
 #include "esp_log.h"
+#include "esp_netif.h"
 #include "esp_timer.h"
 #include "ethernet.hpp"
 #include "freertos/FreeRTOS.h"
@@ -23,6 +25,7 @@
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "host/ble_hs.h"
+#include "mdns.h"
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
 #include "nvs_flash.h"
@@ -34,6 +37,7 @@
 
 #include "lvgl_port.hpp"
 #include "ui.hpp"
+#include "weather_mqtt.hpp"
 
 static constexpr char TAG[] = "bridge";
 
@@ -49,14 +53,6 @@ static void bridge_ble_host_task(void *arg) {
 }
 
 static void bridge_ble_init(void) {
-    esp_err_t err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES ||
-        err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        err = nvs_flash_init();
-    }
-    ESP_ERROR_CHECK(err);
-
     esp_hosted_bt_host_stack_cfg_t bt_cfg =
         ESP_HOSTED_BT_HOST_STACK_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_hosted_bt_host_stack_setup(&bt_cfg));
@@ -66,11 +62,32 @@ static void bridge_ble_init(void) {
     nimble_port_freertos_init(bridge_ble_host_task);
 }
 
+static void system_init() {
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES ||
+        err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(err);
+
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+    ESP_ERROR_CHECK(mdns_init());
+    ESP_ERROR_CHECK(mdns_hostname_set("bridge"));
+}
+
 extern "C" void app_main(void) {
+    system_init();
+
     bridge_ble_init();
 
     static Ethernet eth = Ethernet();
     eth.init();
+
+    static WeatherMQTT mqtt = WeatherMQTT();
+    mqtt.init();
 
     static LVGLPort lvgl_port = LVGLPort();
     if (lvgl_port.init() == ESP_OK) {

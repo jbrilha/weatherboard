@@ -84,6 +84,16 @@ dependencies:
     - esp32p4
     - esp32s31
     version: 1.1.0
+  espressif/mdns:
+    component_hash: ef0766474b37459f6ad22461e453a8713e780e831a7c993b16919d817988dff6
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.14.1
   espressif/mqtt:
     component_hash: fb18bc3b65aa8c94693a9811ffc322cca8a65d92d5ec84983d3e385080e3969c
     dependencies:
@@ -153,10 +163,11 @@ direct_dependencies:
 - espressif/esp_hosted
 - espressif/esp_lcd_touch_gt911
 - espressif/ip101
+- espressif/mdns
 - espressif/mqtt
 - idf
 - lvgl/lvgl
 - waveshare/esp_lcd_jd9365_10_1
-manifest_hash: a875c94b9812439b06f31b83f12ee5b4014237cdb91ddd5d548910a0994135e5
+manifest_hash: f496fc89020443151e251a5d23190e81738c21f846f6ccb530679f14f0bd3ac1
 target: esp32p4
 version: 3.0.0
