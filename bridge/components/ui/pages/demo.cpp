@@ -1,15 +1,8 @@
-/*
- * SPDX-FileCopyrightText: 2023-2024 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: CC0-1.0
- */
+#include "ui.hpp"
 
-#include "lvgl_demo_ui.hpp"
-#include "lvgl.h"
-
+static ui::demo::callbacks cbs;
 static lv_style_t style_bullet;
 static lv_obj_t *scale1;
-static const lv_font_t *font_normal = &lv_font_montserrat_16;
 
 static lv_obj_t *create_scale_box(lv_obj_t *parent, const char *text1,
                                   const char *text2, const char *text3) {
@@ -93,22 +86,17 @@ static void scale1_indic3_anim_cb(void *var, int32_t v) {
     lv_label_set_text_fmt(label, "Costs: %" LV_PRId32 " %%", v);
 }
 
-void example_lvgl_demo_ui(lv_display_t *disp) {
-    // init default theme
-    lv_theme_default_init(disp, lv_palette_main(LV_PALETTE_BLUE),
-                          lv_palette_main(LV_PALETTE_RED),
-                          LV_THEME_DEFAULT_DARK, font_normal);
-    // bullet style
-    lv_style_init(&style_bullet);
-    lv_style_set_border_width(&style_bullet, 0);
-    lv_style_set_radius(&style_bullet, LV_RADIUS_CIRCLE);
+static void create_scales(lv_obj_t *parent) {
+    static bool style_ready = false;
+    if (!style_ready) {
+        lv_style_init(&style_bullet);
+        lv_style_set_border_width(&style_bullet, 0);
+        lv_style_set_radius(&style_bullet, LV_RADIUS_CIRCLE);
+        style_ready = true;
+    }
 
-    lv_obj_t *parent = lv_display_get_screen_active(disp);
-
-    // create scale widget
     scale1 = create_scale_box(parent, "Revenue", "Sales", "Costs");
 
-    // create arc indicators
     lv_obj_t *arc;
     arc = lv_arc_create(scale1);
     lv_obj_remove_style(arc, NULL, LV_PART_KNOB);
@@ -120,7 +108,6 @@ void example_lvgl_demo_ui(lv_display_t *disp) {
                                LV_PART_INDICATOR);
     lv_obj_remove_flag(arc, LV_OBJ_FLAG_CLICKABLE);
 
-    // animation
     lv_anim_t a;
     lv_anim_init(&a);
     lv_anim_set_values(&a, 20, 100);
@@ -164,4 +151,58 @@ void example_lvgl_demo_ui(lv_display_t *disp) {
     lv_anim_set_duration(&a, 2800);
     lv_anim_set_playback_duration(&a, 1800);
     lv_anim_start(&a);
+}
+
+static void brightness_slider_cb(lv_event_t *e) {
+    if (cbs.set_brightness) {
+        uint8_t brightness = lv_slider_get_value(lv_event_get_target_obj(e));
+        cbs.set_brightness(brightness);
+    }
+}
+
+static void fill_test_cb(lv_event_t *e) {
+    lv_obj_t *fill = static_cast<lv_obj_t *>(lv_event_get_user_data(e));
+    if (lv_obj_has_flag(fill, LV_OBJ_FLAG_HIDDEN)) {
+        lv_obj_set_style_bg_color(fill, lv_color_white(), 0);
+        lv_obj_remove_flag(fill, LV_OBJ_FLAG_HIDDEN);
+    } else if (lv_color_eq(lv_obj_get_style_bg_color(fill, LV_PART_MAIN),
+                           lv_color_white())) {
+        lv_obj_set_style_bg_color(fill, lv_color_black(), 0);
+    } else {
+        lv_obj_add_flag(fill, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+void ui::demo::set_callbacks(callbacks c) { cbs = std::move(c); }
+
+void ui::demo::show() {
+    lv_obj_t *scr = lv_obj_create(nullptr);
+
+    lv_obj_t *content = lv_obj_create(scr);
+    lv_obj_remove_style_all(content);
+    lv_obj_set_size(content, LV_PCT(100), LV_PCT(100));
+    create_scales(content);
+
+    lv_obj_t *slider = lv_slider_create(scr);
+    lv_obj_set_width(slider, LV_PCT(75));
+    lv_obj_align(slider, LV_ALIGN_BOTTOM_MID, 0, -60);
+    lv_slider_set_range(slider, 10, 255);
+    lv_slider_set_value(slider, 255, LV_ANIM_OFF);
+    lv_obj_add_event_cb(slider, brightness_slider_cb, LV_EVENT_VALUE_CHANGED,
+                        nullptr);
+
+    lv_obj_t *fill_btn = lv_button_create(scr);
+    lv_obj_align(fill_btn, LV_ALIGN_TOP_RIGHT, -20, 20);
+    lv_label_set_text(lv_label_create(fill_btn), "Fill test");
+
+    lv_obj_t *fill = lv_obj_create(scr);
+    lv_obj_remove_style_all(fill);
+    lv_obj_set_size(fill, LV_PCT(100), LV_PCT(100));
+    lv_obj_set_style_bg_opa(fill, LV_OPA_COVER, 0);
+    lv_obj_add_flag(fill, static_cast<lv_obj_flag_t>(LV_OBJ_FLAG_HIDDEN |
+                                                     LV_OBJ_FLAG_CLICKABLE));
+    lv_obj_add_event_cb(fill, fill_test_cb, LV_EVENT_CLICKED, fill);
+    lv_obj_add_event_cb(fill_btn, fill_test_cb, LV_EVENT_CLICKED, fill);
+
+    lv_screen_load_anim(scr, LV_SCREEN_LOAD_ANIM_FADE_IN, 200, 0, true);
 }

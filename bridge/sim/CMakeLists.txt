@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 project(bridge_sim C CXX)
 
-set(CMAKE_C_STANDARD 17)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_STANDARD 23)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(LVGL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../managed_components/lvgl__lvgl)

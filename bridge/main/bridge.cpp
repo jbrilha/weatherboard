@@ -32,8 +32,8 @@
 #include <sys/param.h>
 #include <unistd.h>
 
-#include "lvgl_demo_ui.hpp"
 #include "lvgl_port.hpp"
+#include "ui.hpp"
 
 static constexpr char TAG[] = "bridge";
 
@@ -74,6 +74,15 @@ extern "C" void app_main(void) {
 
     static LVGLPort lvgl_port = LVGLPort();
     if (lvgl_port.init() == ESP_OK) {
-        lvgl_port.draw_example();
+        auto brightness_func = [](uint8_t v) { lvgl_port.set_brightness(v); };
+        ui::demo::callbacks demo_cbs = {
+            .set_brightness = brightness_func,
+        };
+
+        lv_lock();
+        ui::init(lvgl_port.get_lv_display());
+        ui::demo::set_callbacks(demo_cbs);
+        ui::demo::show();
+        lv_unlock();
     }
 }

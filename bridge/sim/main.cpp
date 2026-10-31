@@ -1,5 +1,5 @@
 #include "lvgl.h"
-#include "lvgl_demo_ui.hpp"
+#include "ui.hpp"
 #include <SDL3/SDL.h>
 
 static constexpr int32_t H_RES = 800;
@@ -83,7 +83,13 @@ int main() {
     lv_indev_set_display(mouse, disp);
     lv_indev_set_read_cb(mouse, mouse_read_cb);
 
-    example_lvgl_demo_ui(disp);
+    auto brightness_func = [](uint8_t v) { SDL_Log("brightness %u", v); };
+    ui::demo::callbacks demo_cbs = {
+        .set_brightness = brightness_func,
+    };
+    ui::init(disp);
+    ui::demo::set_callbacks(demo_cbs);
+    ui::demo::show();
 
     while (handle_events()) {
         SDL_Delay(lv_timer_handler());

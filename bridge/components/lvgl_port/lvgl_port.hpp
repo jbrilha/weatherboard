@@ -13,7 +13,8 @@ class LVGLPort {
     ~LVGLPort();
 
     esp_err_t init(void);
-    void draw_example(void);
+    lv_display_t *get_lv_display(void);
+    void set_brightness(uint8_t level);
 
   private:
     Display display;
