@@ -7,7 +7,7 @@ members = [
     "ui",
     "sim",
 ]
-exclude = ["firmware"]
+exclude = ["firmware", "ffi"]
 
 [workspace.dependencies]
 common = { path = "common" }
