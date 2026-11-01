@@ -2,6 +2,7 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "mqtt_client.h"
+#include "weatherboard.hpp"
 #include <stdio.h>
 
 static constexpr char TAG[] = "WeatherMQTT";
@@ -18,7 +19,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
 
-        msg_id = esp_mqtt_client_subscribe(client, "weatherboard/weather", 0);
+        msg_id = esp_mqtt_client_subscribe(client, wb::topic_str(wb::topic_t::WEATHER), 0);
         ESP_LOGI(TAG, "sent weather subscribe successful, msg_id=%d", msg_id);
 
         msg_id = esp_mqtt_client_subscribe(client, "topic/qos0", 0);
@@ -51,6 +52,12 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
         printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
         printf("DATA=%.*s\r\n", event->data_len, event->data);
         ESP_LOG_BUFFER_HEX(TAG, event->data, event->data_len);
+        wb::weather_t weather;
+        if (wb::decode_weather(reinterpret_cast<const uint8_t *>(event->data),
+                              event->data_len, &weather)) {
+            ESP_LOGI(TAG, "weather: temp=%d C, humidity=%u%%", weather.temp_c,
+                     weather.humidity_pct);
+        }
         break;
     case MQTT_EVENT_ERROR:
         ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
