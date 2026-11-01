@@ -6,7 +6,7 @@ use std::{
 };
 use tokio_util::bytes::Bytes;
 
-use common::{MAX_PAYLOAD_LEN, Message, ToBoard, mqtt::WEATHER_TOPIC};
+use common::{MAX_PAYLOAD_LEN, Message, ToBoard, mqtt::Topic};
 use rumqttd::{
     Broker, Config, ConnectionSettings, Notification, RouterConfig, ServerSettings,
     local::{LinkRx, LinkTx},
@@ -57,7 +57,7 @@ impl MqttService {
             max_outgoing_packet_count: MAX_OUTGOING_PACKET_COUNT,
             max_segment_size: MAX_SEGMENT_SIZE,
             max_segment_count: MAX_SEGMENT_COUNT,
-            initialized_filters: Some(vec![WEATHER_TOPIC.to_string()]),
+            initialized_filters: Some(vec![Topic::Weather.as_str().to_string()]),
             ..Default::default()
         };
 
@@ -115,7 +115,7 @@ impl MqttService {
             };
             let bytes = ToBoard::Weather(payload).encode(&mut buf)?;
             let publish = Publish::new(
-                Bytes::from_static(WEATHER_TOPIC.as_bytes()),
+                Bytes::from_static(Topic::Weather.as_str().as_bytes()),
                 Bytes::copy_from_slice(bytes),
                 true,
             );

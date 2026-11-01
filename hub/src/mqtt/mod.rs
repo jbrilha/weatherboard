@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use common::ipc::{HUB_SOCKET, ToHub, ToServer};
-use common::mqtt::WEATHER_TOPIC;
+use common::mqtt::Topic;
 use common::weather::WeatherPayload;
 use common::{MAX_PAYLOAD_LEN, Message, ToBoard};
 use futures::SinkExt;
@@ -47,7 +47,7 @@ impl MqttService {
 
     pub async fn run(mut self) -> anyhow::Result<()> {
         self.client
-            .subscribe(WEATHER_TOPIC, QoS::AtMostOnce)
+            .subscribe(Topic::Weather.as_str(), QoS::AtMostOnce)
             .await?;
         loop {
             let event = self.event_loop.poll().await?;
