@@ -5,6 +5,7 @@ use strum::EnumString;
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[serde(rename_all = "snake_case")]
+#[repr(u8)]
 pub enum Location {
     Lisbon,
     Caparica,
@@ -30,6 +31,7 @@ impl Location {
     Copy, Clone, Debug, PartialEq, Serialize, Deserialize, Sequence, EnumString, strum::Display,
 )]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[repr(u8)]
 pub enum Day {
     Sunday,
     Monday,
@@ -70,6 +72,7 @@ impl Day {
     Copy, Clone, Debug, PartialEq, Serialize, Deserialize, Sequence, EnumString, strum::Display,
 )]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[repr(u8)]
 pub enum Month {
     January,
     February,
@@ -123,6 +126,7 @@ impl Month {
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[repr(u8)]
 pub enum Condition {
     Sunny,
     PartlyCloudy,
@@ -137,6 +141,7 @@ pub enum Condition {
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[repr(C)]
 pub struct DayForecast {
     pub condition: Condition,
     pub low_c: i8,

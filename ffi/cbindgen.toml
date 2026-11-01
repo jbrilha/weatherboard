@@ -1,0 +1,31 @@
+language = "C++"
+include_guard = "WEATHERBOARD_H"
+usize_is_size_t = true
+namespaces = ["wb"]
+
+[parse]
+parse_deps = true
+include = ["common"]
+
+[export]
+prefix = "Wb"
+renaming_overrides_prefixing = true
+
+[export.rename]
+Location = "location_t"
+Day = "day_t"
+Month = "month_t"
+Condition = "condition_t"
+DayForecast = "day_forecast_t"
+Weather = "weather_t"
+Topic = "topic_t"
+
+[enum]
+prefix_with_name = false
+rename_variants = "ScreamingSnakeCase"
+
+[struct]
+rename_fields = "SnakeCase"
+
+[fn]
+rename_args = "SnakeCase"
