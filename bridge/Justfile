@@ -28,6 +28,9 @@ fullclean:
 clean:
     rm -rf build
 
+bindings:
+    cargo build --release --manifest-path ../ffi/Cargo.toml
+
 lvgl-sim:
     cmake -S sim -B sim/build
     cmake --build sim/build -j
