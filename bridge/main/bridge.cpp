@@ -4,21 +4,10 @@
  * SPDX-License-Identifier: CC0-1.0
  */
 
-#include "driver/gpio.h"
-#include "driver/i2c_master.h"
-#include "esp_efuse.h"
 #include "esp_err.h"
 #include "esp_event.h"
-#include "esp_hosted_bt_host_stack.h"
-#include "esp_lcd_jd9365_10_1.h"
-#include "esp_lcd_mipi_dsi.h"
-#include "esp_lcd_panel_ops.h"
-#include "esp_lcd_touch.h"
-#include "esp_lcd_touch_gt911.h"
-#include "esp_ldo_regulator.h"
 #include "esp_log.h"
 #include "esp_netif.h"
-#include "esp_timer.h"
 #include "ethernet.hpp"
 #include "freertos/FreeRTOS.h"
 #include "freertos/projdefs.h"
@@ -35,32 +24,12 @@
 #include <sys/param.h>
 #include <unistd.h>
 
+#include "ble.hpp"
 #include "lvgl_port.hpp"
 #include "ui.hpp"
 #include "weather_mqtt.hpp"
 
 static constexpr char TAG[] = "bridge";
-
-static void bridge_ble_on_sync(void) { ESP_LOGI(TAG, "BLE host synced"); }
-
-static void bridge_ble_on_reset(int reason) {
-    ESP_LOGW(TAG, "BLE host reset (reason=%d)", reason);
-}
-
-static void bridge_ble_host_task(void *arg) {
-    nimble_port_run();
-    nimble_port_freertos_deinit();
-}
-
-static void bridge_ble_init(void) {
-    esp_hosted_bt_host_stack_cfg_t bt_cfg =
-        ESP_HOSTED_BT_HOST_STACK_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_hosted_bt_host_stack_setup(&bt_cfg));
-    ESP_ERROR_CHECK(nimble_port_init());
-    ble_hs_cfg.sync_cb = bridge_ble_on_sync;
-    ble_hs_cfg.reset_cb = bridge_ble_on_reset;
-    nimble_port_freertos_init(bridge_ble_host_task);
-}
 
 static void system_init() {
     esp_err_t err = nvs_flash_init();
@@ -75,13 +44,14 @@ static void system_init() {
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     ESP_ERROR_CHECK(mdns_init());
-    ESP_ERROR_CHECK(mdns_hostname_set("bridge"));
+    ESP_ERROR_CHECK(mdns_hostname_set(TAG));
 }
 
 extern "C" void app_main(void) {
     system_init();
 
-    bridge_ble_init();
+    static BLE ble = BLE();
+    ble.init();
 
     static Ethernet eth = Ethernet();
     eth.init();

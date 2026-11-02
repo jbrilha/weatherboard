@@ -1,0 +1,4 @@
+dependencies:
+  nimble_central_utils:
+    path: nimble_central_utils
+  espressif/esp_hosted: "*"

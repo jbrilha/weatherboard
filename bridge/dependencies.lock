@@ -139,6 +139,12 @@ dependencies:
       registry_url: https://components.espressif.com/
       type: service
     version: 9.6.0
+  nimble_central_utils:
+    dependencies: []
+    source:
+      path: components/ble/nimble_central_utils
+      type: local
+    version: '*'
   waveshare/esp_lcd_jd9365_10_1:
     component_hash: 71ec315454a6d0dc628b589979ec5044f671e6f0a3126ec3b25f97a022c1bc05
     dependencies:
@@ -167,7 +173,8 @@ direct_dependencies:
 - espressif/mqtt
 - idf
 - lvgl/lvgl
+- nimble_central_utils
 - waveshare/esp_lcd_jd9365_10_1
-manifest_hash: f496fc89020443151e251a5d23190e81738c21f846f6ccb530679f14f0bd3ac1
+manifest_hash: df54e98649daab0e99a335eb9901e18d19c9c7c5b2093a8fe2f0a66c8b9c616d
 target: esp32p4
 version: 3.0.0
