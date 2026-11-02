@@ -1,4 +1,4 @@
 idf_component_register(SRCS "ble.cpp"
                     INCLUDE_DIRS "."
-                    REQUIRES bt weatherboard_ffi
+                    REQUIRES bt weatherboard_ffi weather_mqtt
 )

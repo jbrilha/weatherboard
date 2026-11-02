@@ -50,13 +50,14 @@ static void system_init() {
 extern "C" void app_main(void) {
     system_init();
 
+    static WeatherMQTT mqtt = WeatherMQTT();
+
     static BLE ble = BLE();
-    ble.init();
+    ble.init(&mqtt);
 
     static Ethernet eth = Ethernet();
     eth.init();
 
-    static WeatherMQTT mqtt = WeatherMQTT();
     mqtt.init();
 
     static LVGLPort lvgl_port = LVGLPort();

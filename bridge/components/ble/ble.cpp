@@ -10,6 +10,7 @@
 
 #include "blecent.h"
 #include "esp_central.h"
+#include "weather_mqtt.hpp"
 #include "weatherboard.hpp"
 
 #include <cinttypes>
@@ -33,6 +34,8 @@ static const ble_uuid128_t remote_chr_uuid =
     to_ble_uuid(wb::weather_payload_uuid_le());
 static const ble_uuid16_t cccd_uuid =
     BLE_UUID16_INIT(BLE_GATT_DSC_CLT_CFG_UUID16);
+
+static WeatherMQTT *weather_source = nullptr;
 
 #if CONFIG_EXAMPLE_EXTENDED_ADV
 static int
@@ -293,6 +296,39 @@ err:
     return ble_gap_terminate(peer->conn_handle, BLE_ERR_REM_USER_CONN_TERM);
 }
 
+static int blecent_on_mtu(uint16_t conn_handle,
+                          const struct ble_gatt_error *error, uint16_t mtu,
+                          void *arg) {
+    uint16_t val_handle = (uint16_t)(uintptr_t)arg;
+    uint8_t payload[WB_MAX_PAYLOAD_LEN];
+    size_t len;
+    int rc;
+
+    MODLOG_DFLT(INFO, "MTU exchange complete; status=%d conn_handle=%d mtu=%d\n",
+                error->status, conn_handle, mtu);
+
+    len = weather_source->get_latest_payload(payload, sizeof payload);
+    if (len == 0) {
+        MODLOG_DFLT(WARN, "No weather payload to send yet\n");
+        return 0;
+    }
+    if (len > (size_t)(ble_att_mtu(conn_handle) - 3)) {
+        MODLOG_DFLT(ERROR, "Weather payload (%u bytes) exceeds MTU %u\n",
+                    (unsigned)len, ble_att_mtu(conn_handle));
+        return ble_gap_terminate(conn_handle, BLE_ERR_REM_USER_CONN_TERM);
+    }
+
+    rc = ble_gattc_write_flat(conn_handle, val_handle, payload, len,
+                              blecent_on_custom_write, NULL);
+    if (rc != 0) {
+        MODLOG_DFLT(ERROR, "Error: Failed to write weather payload; rc=%d\n",
+                    rc);
+        return ble_gap_terminate(conn_handle, BLE_ERR_REM_USER_CONN_TERM);
+    }
+
+    return 0;
+}
+
 /**
  * Application Callback. Called when the custom subscribable characteristic
  * is subscribed to.
@@ -301,7 +337,6 @@ static int blecent_on_custom_subscribe(uint16_t conn_handle,
                                        const struct ble_gatt_error *error,
                                        struct ble_gatt_attr *attr, void *arg) {
     const struct peer_chr *chr;
-    uint8_t value;
     int rc;
     const struct peer *peer;
 
@@ -325,17 +360,10 @@ static int blecent_on_custom_subscribe(uint16_t conn_handle,
         goto err;
     }
 
-    /* Write 1 byte to the new characteristic to test if it notifies after
-     * subscribing */
-    value = 0x19;
-    rc = ble_gattc_write_flat(conn_handle, chr->chr.val_handle, &value,
-                              sizeof(value), blecent_on_custom_write, NULL);
+    rc = ble_gattc_exchange_mtu(conn_handle, blecent_on_mtu,
+                                (void *)(uintptr_t)chr->chr.val_handle);
     if (rc != 0) {
-        MODLOG_DFLT(
-            ERROR,
-            "Error: Failed to write to the subscribable characteristic; "
-            "rc=%d\n",
-            rc);
+        MODLOG_DFLT(ERROR, "Error: Failed to exchange MTU; rc=%d\n", rc);
         goto err;
     }
 
@@ -776,7 +804,8 @@ BLE::BLE() : bt_config{} {
 
 BLE::~BLE() {}
 
-esp_err_t BLE::init(void) {
+esp_err_t BLE::init(WeatherMQTT *weather) {
+    weather_source = weather;
     ESP_ERROR_CHECK(esp_hosted_bt_host_stack_setup(&bt_config));
     ESP_ERROR_CHECK(nimble_port_init());
     ble_hs_cfg.sync_cb = bridge_ble_on_sync;
