@@ -7,12 +7,13 @@
 
 static constexpr char TAG[] = "WeatherMQTT";
 
-static wb::weather_t latest_weather;
-static uint8_t latest_payload[WB_MAX_PAYLOAD_LEN];
-static size_t latest_payload_len = 0;
+namespace {
+wb::weather_t latest_weather;
+uint8_t latest_payload[WB_MAX_PAYLOAD_LEN];
+size_t latest_payload_len = 0;
 
-static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
-                               int32_t event_id, void *event_data) {
+void mqtt_event_handler(void *handler_args, esp_event_base_t base,
+                        int32_t event_id, void *event_data) {
     ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%" PRIi32,
              base, event_id);
     esp_mqtt_event_handle_t event =
@@ -90,6 +91,8 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
         break;
     }
 }
+
+} // namespace
 
 WeatherMQTT::WeatherMQTT() : client_config{}, client_handle(nullptr) {
 

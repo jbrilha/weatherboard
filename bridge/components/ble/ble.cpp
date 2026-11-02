@@ -8,114 +8,36 @@
 #include "nimble/nimble_port_freertos.h"
 #include "services/gap/ble_svc_gap.h"
 
-#include "blecent.h"
 #include "esp_central.h"
 #include "weather_mqtt.hpp"
 #include "weatherboard.hpp"
 
-#include <cinttypes>
 #include <cstdlib>
 #include <cstring>
 
 static constexpr char TAG[] = "BLE";
-#define CONFIG_EXAMPLE_PEER_ADDR "ADDR_ANY"
+namespace {
+
 static int blecent_gap_event(struct ble_gap_event *event, void *arg);
 
-static ble_uuid128_t to_ble_uuid(wb::uuid128_t uuid) {
+ble_uuid128_t to_ble_uuid(wb::uuid128_t uuid) {
     ble_uuid128_t out{};
     out.u.type = BLE_UUID_TYPE_128;
     memcpy(out.value, uuid.bytes, sizeof out.value);
     return out;
 }
 
-static const ble_uuid128_t remote_svc_uuid =
+const ble_uuid128_t remote_svc_uuid =
     to_ble_uuid(wb::display_service_uuid_le());
-static const ble_uuid128_t remote_chr_uuid =
+const ble_uuid128_t remote_chr_uuid =
     to_ble_uuid(wb::weather_payload_uuid_le());
-static const ble_uuid16_t cccd_uuid =
-    BLE_UUID16_INIT(BLE_GATT_DSC_CLT_CFG_UUID16);
+const ble_uuid16_t cccd_uuid = BLE_UUID16_INIT(BLE_GATT_DSC_CLT_CFG_UUID16);
 
-static WeatherMQTT *weather_source = nullptr;
+WeatherMQTT *weather_source = nullptr;
 
-#if CONFIG_EXAMPLE_EXTENDED_ADV
-static int
-ext_blecent_should_connect(const struct ble_gap_ext_disc_desc *disc) {
-    int offset = 0;
-    int ad_struct_len = 0;
-#if CONFIG_EXAMPLE_USE_CI_ADDRESS
-    uint32_t *addr_offset;
-#endif // CONFIG_EXAMPLE_USE_CI_ADDRESS
-    uint8_t test_addr[6];
-    uint32_t peer_addr[6];
-
-    memset(peer_addr, 0x0, sizeof peer_addr);
-
-    if (disc->legacy_event_type != BLE_HCI_ADV_RPT_EVTYPE_ADV_IND &&
-        disc->legacy_event_type != BLE_HCI_ADV_RPT_EVTYPE_DIR_IND) {
-        return 0;
-    }
-    if (strlen(CONFIG_EXAMPLE_PEER_ADDR) &&
-        (strncmp(CONFIG_EXAMPLE_PEER_ADDR, "ADDR_ANY", strlen("ADDR_ANY")) !=
-         0)) {
-#if !CONFIG_EXAMPLE_USE_CI_ADDRESS
-        ESP_LOGI(TAG, "Peer address from menuconfig: %s",
-                 CONFIG_EXAMPLE_PEER_ADDR);
-        /* Convert string to address */
-        const char *p = CONFIG_EXAMPLE_PEER_ADDR;
-        for (int i = 5; i >= 0; i--) {
-            char *end;
-            peer_addr[i] = strtoul(p, &end, 16);
-            p = *end ? end + 1 : end;
-        }
-#endif
-
-        /* Conversion */
-        for (int i = 0; i < 6; i++) {
-            test_addr[i] = (uint8_t)peer_addr[i];
-        }
-
-#if CONFIG_EXAMPLE_USE_CI_ADDRESS
-        addr_offset = (uint32_t *)&test_addr[1];
-        *addr_offset = atoi(CONFIG_EXAMPLE_PEER_ADDR);
-        test_addr[5] = 0xC3;
-        test_addr[0] = CONFIG_IDF_FIRMWARE_CHIP_ID;
-#endif
-        if (memcmp(test_addr, disc->addr.val, sizeof(disc->addr.val)) != 0) {
-            return 0;
-        }
-    }
-
-    while (offset < disc->length_data) {
-        ad_struct_len = disc->data[offset];
-
-        if (ad_struct_len == 0 ||
-            offset + ad_struct_len + 1 > disc->length_data) {
-            break;
-        }
-
-        if (ad_struct_len >= 17 && (disc->data[offset + 1] == 0x06 ||
-                                    disc->data[offset + 1] == 0x07)) {
-            for (int i = 2; i + 15 <= ad_struct_len; i += 16) {
-                if (memcmp(&disc->data[offset + i], remote_svc_uuid.value,
-                           sizeof remote_svc_uuid.value) == 0) {
-                    return 1;
-                }
-            }
-        }
-
-        offset += ad_struct_len + 1;
-    }
-
-    return 0;
-}
-#else
-static int blecent_should_connect(const struct ble_gap_disc_desc *disc) {
+int blecent_should_connect(const struct ble_gap_disc_desc *disc) {
     struct ble_hs_adv_fields fields;
     int rc;
-#if CONFIG_EXAMPLE_USE_CI_ADDRESS
-    uint32_t *addr_offset;
-#endif // CONFIG_EXAMPLE_USE_CI_ADDRESS
-    uint8_t test_addr[6];
     uint32_t peer_addr[6];
 
     memset(peer_addr, 0x0, sizeof peer_addr);
@@ -132,41 +54,6 @@ static int blecent_should_connect(const struct ble_gap_disc_desc *disc) {
         return 0;
     }
 
-    if (strlen(CONFIG_EXAMPLE_PEER_ADDR) &&
-        (strncmp(CONFIG_EXAMPLE_PEER_ADDR, "ADDR_ANY", strlen("ADDR_ANY")) !=
-         0)) {
-        ESP_LOGI(TAG, "Peer address from menuconfig: %s",
-                 CONFIG_EXAMPLE_PEER_ADDR);
-#if !CONFIG_EXAMPLE_USE_CI_ADDRESS
-        /* Convert string to address */
-        const char *p = CONFIG_EXAMPLE_PEER_ADDR;
-        for (int i = 5; i >= 0; i--) {
-            char *end;
-            peer_addr[i] = strtoul(p, &end, 16);
-            p = *end ? end + 1 : end;
-        }
-        printf("peer-->  %" PRIx32 " %" PRIx32 " %" PRIx32 " %" PRIx32
-               " %" PRIx32 " %" PRIx32 " \n",
-               peer_addr[5], peer_addr[4], peer_addr[3], peer_addr[2],
-               peer_addr[1], peer_addr[0]);
-#endif
-        /* Conversion */
-        for (int i = 0; i < 6; i++) {
-            test_addr[i] = (uint8_t)peer_addr[i];
-        }
-
-#if CONFIG_EXAMPLE_USE_CI_ADDRESS
-        addr_offset = (uint32_t *)&test_addr[1];
-        *addr_offset = atoi(CONFIG_EXAMPLE_PEER_ADDR);
-        test_addr[5] = 0xC3;
-        test_addr[0] = CONFIG_IDF_FIRMWARE_CHIP_ID;
-#endif
-
-        if (memcmp(test_addr, disc->addr.val, sizeof(disc->addr.val)) != 0) {
-            return 0;
-        }
-    }
-
     for (int i = 0; i < fields.num_uuids128; i++) {
         if (ble_uuid_cmp(&fields.uuids128[i].u, &remote_svc_uuid.u) == 0) {
             return 1;
@@ -175,23 +62,16 @@ static int blecent_should_connect(const struct ble_gap_disc_desc *disc) {
 
     return 0;
 }
-#endif
 
-static void blecent_connect_if_interesting(void *disc) {
+void blecent_connect_if_interesting(void *disc) {
     uint8_t own_addr_type;
     int rc;
     ble_addr_t *addr;
 
     /* Don't do anything if we don't care about this advertiser. */
-#if CONFIG_EXAMPLE_EXTENDED_ADV
-    if (!ext_blecent_should_connect((struct ble_gap_ext_disc_desc *)disc)) {
-        return;
-    }
-#else
     if (!blecent_should_connect((struct ble_gap_disc_desc *)disc)) {
         return;
     }
-#endif
 
 #if !(MYNEWT_VAL(BLE_HOST_ALLOW_CONNECT_WITH_SCAN))
     /* Scanning must be stopped before a connection can be initiated. */
@@ -212,11 +92,7 @@ static void blecent_connect_if_interesting(void *disc) {
     /* Try to connect the the advertiser.  Allow 30 seconds (30000 ms) for
      * timeout.
      */
-#if CONFIG_EXAMPLE_EXTENDED_ADV
-    addr = &((struct ble_gap_ext_disc_desc *)disc)->addr;
-#else
     addr = &((struct ble_gap_disc_desc *)disc)->addr;
-#endif
 
     rc = ble_gap_connect(own_addr_type, addr, 30000, NULL, blecent_gap_event,
                          NULL);
@@ -229,9 +105,9 @@ static void blecent_connect_if_interesting(void *disc) {
     }
 }
 
-static int blecent_on_custom_read(uint16_t conn_handle,
-                                  const struct ble_gatt_error *error,
-                                  struct ble_gatt_attr *attr, void *arg) {
+int blecent_on_custom_read(uint16_t conn_handle,
+                           const struct ble_gatt_error *error,
+                           struct ble_gatt_attr *attr, void *arg) {
     MODLOG_DFLT(INFO,
                 "Read complete for the subscribable characteristic; "
                 "status=%d conn_handle=%d",
@@ -251,9 +127,9 @@ static int blecent_on_custom_read(uint16_t conn_handle,
  * Client has previously subscribed to this characeteristic,
  * so expect a notification from the server.
  **/
-static int blecent_on_custom_write(uint16_t conn_handle,
-                                   const struct ble_gatt_error *error,
-                                   struct ble_gatt_attr *attr, void *arg) {
+int blecent_on_custom_write(uint16_t conn_handle,
+                            const struct ble_gatt_error *error,
+                            struct ble_gatt_attr *attr, void *arg) {
     const struct peer_chr *chr;
     const struct peer *peer;
     int rc;
@@ -296,15 +172,15 @@ err:
     return ble_gap_terminate(peer->conn_handle, BLE_ERR_REM_USER_CONN_TERM);
 }
 
-static int blecent_on_mtu(uint16_t conn_handle,
-                          const struct ble_gatt_error *error, uint16_t mtu,
-                          void *arg) {
+int blecent_on_mtu(uint16_t conn_handle, const struct ble_gatt_error *error,
+                   uint16_t mtu, void *arg) {
     uint16_t val_handle = (uint16_t)(uintptr_t)arg;
     uint8_t payload[WB_MAX_PAYLOAD_LEN];
     size_t len;
     int rc;
 
-    MODLOG_DFLT(INFO, "MTU exchange complete; status=%d conn_handle=%d mtu=%d\n",
+    MODLOG_DFLT(INFO,
+                "MTU exchange complete; status=%d conn_handle=%d mtu=%d\n",
                 error->status, conn_handle, mtu);
 
     len = weather_source->get_latest_payload(payload, sizeof payload);
@@ -333,9 +209,9 @@ static int blecent_on_mtu(uint16_t conn_handle,
  * Application Callback. Called when the custom subscribable characteristic
  * is subscribed to.
  **/
-static int blecent_on_custom_subscribe(uint16_t conn_handle,
-                                       const struct ble_gatt_error *error,
-                                       struct ble_gatt_attr *attr, void *arg) {
+int blecent_on_custom_subscribe(uint16_t conn_handle,
+                                const struct ble_gatt_error *error,
+                                struct ble_gatt_attr *attr, void *arg) {
     const struct peer_chr *chr;
     int rc;
     const struct peer *peer;
@@ -373,7 +249,7 @@ err:
     return ble_gap_terminate(peer->conn_handle, BLE_ERR_REM_USER_CONN_TERM);
 }
 
-static void blecent_custom_gatt_operations(const struct peer *peer) {
+void blecent_custom_gatt_operations(const struct peer *peer) {
     const struct peer_dsc *dsc;
     int rc;
     uint8_t value[2];
@@ -407,8 +283,7 @@ err:
     ble_gap_terminate(peer->conn_handle, BLE_ERR_REM_USER_CONN_TERM);
 }
 
-static void blecent_on_disc_complete(const struct peer *peer, int status,
-                                     void *arg) {
+void blecent_on_disc_complete(const struct peer *peer, int status, void *arg) {
 
     if (status != 0) {
         /* Service discovery failed.  Terminate the connection. */
@@ -432,7 +307,7 @@ static void blecent_on_disc_complete(const struct peer *peer, int status,
     blecent_custom_gatt_operations(peer);
 }
 
-static void blecent_scan(void) {
+void blecent_scan(void) {
     uint8_t own_addr_type;
     struct ble_gap_disc_params disc_params = {};
     int rc;
@@ -469,16 +344,11 @@ static void blecent_scan(void) {
     }
 }
 
-static int blecent_gap_event(struct ble_gap_event *event, void *arg) {
+int blecent_gap_event(struct ble_gap_event *event, void *arg) {
 #if NIMBLE_BLE_CONNECT
     struct ble_gap_conn_desc desc;
 #endif
     struct ble_hs_adv_fields fields;
-#if MYNEWT_VAL(BLE_HCI_VS)
-#if MYNEWT_VAL(BLE_POWER_CONTROL)
-    struct ble_gap_set_auto_pcl_params params;
-#endif
-#endif
     int rc;
 
     switch (event->type) {
@@ -516,20 +386,6 @@ static int blecent_gap_event(struct ble_gap_event *event, void *arg) {
 
 #if MYNEWT_VAL(BLE_POWER_CONTROL)
             blecent_power_control(event->connect.conn_handle);
-#endif
-
-#if MYNEWT_VAL(BLE_HCI_VS)
-#if MYNEWT_VAL(BLE_POWER_CONTROL)
-            memset(&params, 0x0, sizeof(struct ble_gap_set_auto_pcl_params));
-            params.conn_handle = event->connect.conn_handle;
-            rc = ble_gap_set_auto_pcl_param(&params);
-            if (rc != 0) {
-                MODLOG_DFLT(INFO, "Failed to send VSC  %x \n", rc);
-                return 0;
-            } else {
-                MODLOG_DFLT(INFO, "Successfully issued VSC , rc = %d \n", rc);
-            }
-#endif
 #endif
 
 #if CONFIG_EXAMPLE_ENCRYPTION
@@ -585,14 +441,6 @@ static int blecent_gap_event(struct ble_gap_event *event, void *arg) {
         /* Forget about peer. */
         peer_delete(event->disconnect.conn.conn_handle);
 
-#if MYNEWT_VAL(BLE_EATT_CHAN_NUM) > 0
-        /* Reset EATT config */
-        bearers = 0;
-        for (int i = 0; i < MYNEWT_VAL(BLE_EATT_CHAN_NUM); i++) {
-            cids[i] = 0;
-        }
-#endif
-
         /* Resume scanning. */
         blecent_scan();
         return 0;
@@ -609,7 +457,6 @@ static int blecent_gap_event(struct ble_gap_event *event, void *arg) {
         rc = ble_gap_conn_find(event->enc_change.conn_handle, &desc);
         assert(rc == 0);
         print_conn_desc(&desc);
-#if !MYNEWT_VAL(BLE_EATT_CHAN_NUM)
 #if CONFIG_EXAMPLE_ENCRYPTION && MYNEWT_VAL(BLE_GATTC)
 #if MYNEWT_VAL(BLE_GATT_CACHING_ASSOC_ENABLE)
         rc = ble_gattc_cache_assoc(desc.peer_id_addr);
@@ -628,7 +475,6 @@ static int blecent_gap_event(struct ble_gap_event *event, void *arg) {
         }
 #endif // BLE_GATT_CACHING_ASSOC_ENABLE
 #endif // EXAMPLE_ENCRYPTION
-#endif
         return 0;
 
     case BLE_GAP_EVENT_CACHE_ASSOC:
@@ -684,84 +530,6 @@ static int blecent_gap_event(struct ble_gap_event *event, void *arg) {
          */
         return BLE_GAP_REPEAT_PAIRING_RETRY;
 
-#if CONFIG_EXAMPLE_EXTENDED_ADV
-    case BLE_GAP_EVENT_EXT_DISC:
-        /* An advertisement report was received during GAP discovery. */
-        ext_print_adv_report(&event->ext_disc);
-
-        blecent_connect_if_interesting(&event->ext_disc);
-        return 0;
-#endif
-
-#if MYNEWT_VAL(BLE_POWER_CONTROL)
-    case BLE_GAP_EVENT_TRANSMIT_POWER:
-        MODLOG_DFLT(INFO,
-                    "Transmit power event : status=%d conn_handle=%d reason=%d "
-                    "phy=%d power_level=%d power_level_flag=%d delta=%d",
-                    event->transmit_power.status,
-                    event->transmit_power.conn_handle,
-                    event->transmit_power.reason, event->transmit_power.phy,
-                    event->transmit_power.transmit_power_level,
-                    event->transmit_power.transmit_power_level_flag,
-                    event->transmit_power.delta);
-        return 0;
-
-    case BLE_GAP_EVENT_PATHLOSS_THRESHOLD:
-        MODLOG_DFLT(
-            INFO,
-            "Pathloss threshold event : conn_handle=%d current path loss=%d "
-            "zone_entered =%d",
-            event->pathloss_threshold.conn_handle,
-            event->pathloss_threshold.current_path_loss,
-            event->pathloss_threshold.zone_entered);
-        return 0;
-#endif
-
-#if MYNEWT_VAL(BLE_EATT_CHAN_NUM) > 0
-    case BLE_GAP_EVENT_EATT:
-        int i;
-        MODLOG_DFLT(INFO, "EATT %s : conn_handle=%d cid=%d",
-                    event->eatt.status ? "disconnected" : "connected",
-                    event->eatt.conn_handle, event->eatt.cid);
-        if (event->eatt.status) {
-            /* Remove CID from the list of saved CIDs */
-            for (i = 0; i < bearers; i++) {
-                if (cids[i] == event->eatt.cid) {
-                    break;
-                }
-            }
-            while (i < (bearers - 1)) {
-                cids[i] = cids[i + 1];
-                i += 1;
-            }
-            cids[i] = 0;
-
-            /* Now Abort */
-            return 0;
-        }
-        cids[bearers] = event->eatt.cid;
-        bearers += 1;
-        if (bearers != MYNEWT_VAL(BLE_EATT_CHAN_NUM)) {
-            /* Wait until all EATT bearers are connected before proceeding */
-            return 0;
-        }
-        /* Set the default bearer to use for further procedures */
-        rc = ble_att_set_default_bearer_using_cid(event->eatt.conn_handle,
-                                                  cids[0]);
-        if (rc != 0) {
-            MODLOG_DFLT(INFO, "Cannot set default EATT bearer, rc = %d\n", rc);
-            return rc;
-        }
-#if MYNEWT_VAL(BLE_GATTC)
-        /* Perform service discovery */
-        rc = peer_disc_all(event->eatt.conn_handle, blecent_on_disc_complete,
-                           NULL);
-        if (rc != 0) {
-            MODLOG_DFLT(ERROR, "Failed to discover services; rc=%d\n", rc);
-            return 0;
-        }
-#endif
-#endif
         return 0;
 
 #endif
@@ -770,7 +538,7 @@ static int blecent_gap_event(struct ble_gap_event *event, void *arg) {
     }
 }
 
-static void bridge_ble_on_sync(void) {
+void bridge_ble_on_sync(void) {
     ESP_LOGI(TAG, "host synced");
 
     int rc;
@@ -783,14 +551,16 @@ static void bridge_ble_on_sync(void) {
     blecent_scan();
 }
 
-static void bridge_ble_on_reset(int reason) {
+void bridge_ble_on_reset(int reason) {
     ESP_LOGW(TAG, "host reset (reason=%d)", reason);
 }
 
-static void bridge_ble_host_task(void *arg) {
+void bridge_ble_host_task(void *arg) {
     nimble_port_run();
     nimble_port_freertos_deinit();
 }
+
+} // namespace
 
 BLE::BLE() : bt_config{} {
     bt_config = (esp_hosted_bt_host_stack_cfg_t){
