@@ -10,6 +10,41 @@ pub extern "C" fn topic_str(topic: Topic) -> *const core::ffi::c_char {
 }
 
 #[repr(C)]
+pub struct Uuid128 {
+    pub bytes: [u8; 16],
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn display_service_uuid() -> Uuid128 {
+    Uuid128 {
+        bytes: *common::display_service_uuid().as_bytes(),
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn weather_payload_uuid() -> Uuid128 {
+    Uuid128 {
+        bytes: *common::weather_payload_uuid().as_bytes(),
+    }
+}
+
+fn uuid128_le(uuid: common::Uuid) -> Uuid128 {
+    let mut bytes = *uuid.as_bytes();
+    bytes.reverse();
+    Uuid128 { bytes }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn display_service_uuid_le() -> Uuid128 {
+    uuid128_le(common::display_service_uuid())
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn weather_payload_uuid_le() -> Uuid128 {
+    uuid128_le(common::weather_payload_uuid())
+}
+
+#[repr(C)]
 pub struct Weather {
     pub location: Location,
     pub week_day: Day,

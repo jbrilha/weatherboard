@@ -5,7 +5,7 @@ set(FFI_DIR ${CMAKE_CURRENT_LIST_DIR}/../../../ffi)
 set(FFI_LIB ${FFI_DIR}/target/${RUST_TARGET}/release/libweatherboard_ffi.a)
 
 add_custom_target(weatherboard_ffi_build
-    COMMAND cargo build --release --target ${RUST_TARGET}
+    COMMAND cargo build --release --target ${RUST_TARGET} -Zbuild-std=core
     WORKING_DIRECTORY ${FFI_DIR}
     BYPRODUCTS ${FFI_LIB}
     VERBATIM)

@@ -58,6 +58,10 @@ enum class condition_t : uint8_t {
   WIND,
 };
 
+struct uuid128_t {
+  uint8_t bytes[16];
+};
+
 struct day_forecast_t {
   condition_t condition;
   int8_t low_c;
@@ -92,6 +96,14 @@ struct weather_t {
 extern "C" {
 
 const char *topic_str(topic_t topic);
+
+uuid128_t display_service_uuid();
+
+uuid128_t weather_payload_uuid();
+
+uuid128_t display_service_uuid_le();
+
+uuid128_t weather_payload_uuid_le();
 
 bool decode_weather(const uint8_t *buf, size_t len, weather_t *out);
 

@@ -19,6 +19,7 @@ Condition = "condition_t"
 DayForecast = "day_forecast_t"
 Weather = "weather_t"
 Topic = "topic_t"
+Uuid128 = "uuid128_t"
 
 [enum]
 prefix_with_name = false
