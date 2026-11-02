@@ -7,6 +7,10 @@
 
 static constexpr char TAG[] = "WeatherMQTT";
 
+static wb::weather_t latest_weather;
+static uint8_t latest_payload[WB_MAX_PAYLOAD_LEN];
+static size_t latest_payload_len = 0;
+
 static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
                                int32_t event_id, void *event_data) {
     ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%" PRIi32,
@@ -19,7 +23,8 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
 
-        msg_id = esp_mqtt_client_subscribe(client, wb::topic_str(wb::topic_t::WEATHER), 0);
+        msg_id = esp_mqtt_client_subscribe(
+            client, wb::topic_str(wb::topic_t::WEATHER), 0);
         ESP_LOGI(TAG, "sent weather subscribe successful, msg_id=%d", msg_id);
 
         msg_id = esp_mqtt_client_subscribe(client, "topic/qos0", 0);
@@ -52,11 +57,13 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
         printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
         printf("DATA=%.*s\r\n", event->data_len, event->data);
         ESP_LOG_BUFFER_HEX(TAG, event->data, event->data_len);
-        wb::weather_t weather;
         if (wb::decode_weather(reinterpret_cast<const uint8_t *>(event->data),
-                              event->data_len, &weather)) {
-            ESP_LOGI(TAG, "weather: temp=%d C, humidity=%u%%", weather.temp_c,
-                     weather.humidity_pct);
+                               event->data_len, &latest_weather) &&
+            event->data_len <= (int)sizeof latest_payload) {
+            ESP_LOGI(TAG, "weather: temp=%d C, humidity=%u%%",
+                     latest_weather.temp_c, latest_weather.humidity_pct);
+            memcpy(latest_payload, event->data, event->data_len);
+            latest_payload_len = event->data_len;
         }
         break;
     case MQTT_EVENT_ERROR:
@@ -100,4 +107,13 @@ esp_err_t WeatherMQTT::init() {
     ESP_ERROR_CHECK(esp_mqtt_client_start(client_handle));
 
     return ESP_OK;
+}
+
+size_t WeatherMQTT::get_latest_payload(uint8_t *out, size_t len) {
+    if (latest_payload_len == 0 || latest_payload_len > len) {
+        return 0;
+    }
+
+    memcpy(out, latest_payload, latest_payload_len);
+    return latest_payload_len;
 }
