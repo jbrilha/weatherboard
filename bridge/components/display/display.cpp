@@ -12,7 +12,6 @@
 #include "hal/lcd_types.h"
 #include "soc/clk_tree_defs.h"
 #include "soc/gpio_num.h"
-#include <memory>
 
 static constexpr char TAG[] = "Display";
 
@@ -164,6 +163,23 @@ Display::~Display() {
 }
 
 esp_err_t Display::init(void) {
+    // TODO move these to I2C component
+    i2c_master_bus_config_t bus_cfg = {
+        .i2c_port = I2C_NUM_1,
+        .sda_io_num = (gpio_num_t)PIN_NUM_TOUCH_SDA,
+        .scl_io_num = (gpio_num_t)PIN_NUM_TOUCH_SCL,
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .glitch_ignore_cnt = 7,
+        .intr_priority = 0,
+        .trans_queue_depth = 0,
+        .flags =
+            {
+                .enable_internal_pullup = true,
+                .allow_pd = false,
+            },
+    };
+    ESP_ERROR_CHECK(i2c_new_master_bus(&bus_cfg, &i2c_bus));
+
     ESP_ERROR_CHECK(init_panel());
     ESP_ERROR_CHECK(init_touch());
 
@@ -203,26 +219,8 @@ esp_err_t Display::init_panel(void) {
 }
 
 esp_err_t Display::init_touch(void) {
-    // TODO move these to I2C component
-    i2c_master_bus_config_t bus_cfg = {
-        .i2c_port = -1,
-        .sda_io_num = (gpio_num_t)PIN_NUM_TOUCH_SDA,
-        .scl_io_num = (gpio_num_t)PIN_NUM_TOUCH_SCL,
-        .clk_source = I2C_CLK_SRC_DEFAULT,
-        .glitch_ignore_cnt = 7,
-        .intr_priority = 0,
-        .trans_queue_depth = 0,
-        .flags =
-            {
-                .enable_internal_pullup = true,
-                .allow_pd = false,
-            },
-    };
-    ESP_ERROR_CHECK(i2c_new_master_bus(&bus_cfg, &i2c_bus));
-
     ESP_ERROR_CHECK(
         i2c_master_bus_add_device(i2c_bus, &backlight_cfg, &backlight_dev));
-    set_brightness(255);
 
     if (i2c_master_probe(i2c_bus, ESP_LCD_TOUCH_IO_I2C_GT911_ADDRESS, 50) !=
         ESP_OK) {
