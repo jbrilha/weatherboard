@@ -10,7 +10,7 @@ pub use uuid::Uuid;
 use crate::weather::WeatherPayload;
 
 pub const PAYLOAD_VERSION: u8 = u8::MAX;
-pub const MAX_PAYLOAD_LEN: usize = 512;
+pub const MAX_PAYLOAD_LEN: usize = 255;
 pub const TEST_LEN: usize = 32;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]

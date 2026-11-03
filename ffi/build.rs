@@ -7,7 +7,7 @@ fn main() {
         .with_crate(&dir)
         .with_config(config)
         .with_after_include(format!(
-            "\nconstexpr uint16_t WB_MAX_PAYLOAD_LEN = {};",
+            "\nconstexpr uint8_t WB_MAX_PAYLOAD_LEN = {};",
             common::MAX_PAYLOAD_LEN
         ))
         .generate()

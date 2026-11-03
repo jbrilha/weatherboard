@@ -8,7 +8,7 @@
 #include <ostream>
 #include <new>
 
-constexpr uint16_t WB_MAX_PAYLOAD_LEN = 512;
+constexpr uint8_t WB_MAX_PAYLOAD_LEN = 255;
 
 namespace wb {
 

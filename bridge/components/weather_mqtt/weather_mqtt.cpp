@@ -1,16 +1,21 @@
 #include "weather_mqtt.hpp"
 #include "esp_err.h"
+#include "esp_event.h"
+#include "esp_event_base.h"
 #include "esp_log.h"
 #include "mqtt_client.h"
 #include "weatherboard.hpp"
+#include <cstdint>
 #include <stdio.h>
 
 static constexpr char TAG[] = "WeatherMQTT";
 
+ESP_EVENT_DEFINE_BASE(BRIDGE_MQTT_EVENTS);
+
 namespace {
-wb::weather_t latest_weather;
 uint8_t latest_payload[WB_MAX_PAYLOAD_LEN];
-size_t latest_payload_len = 0;
+uint8_t latest_len = 0;
+portMUX_TYPE weather_lock = portMUX_INITIALIZER_UNLOCKED;
 
 void mqtt_event_handler(void *handler_args, esp_event_base_t base,
                         int32_t event_id, void *event_data) {
@@ -50,13 +55,21 @@ void mqtt_event_handler(void *handler_args, esp_event_base_t base,
         printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
         printf("DATA=%.*s\r\n", event->data_len, event->data);
         ESP_LOG_BUFFER_HEX(TAG, event->data, event->data_len);
-        if (wb::decode_weather(reinterpret_cast<const uint8_t *>(event->data),
-                               event->data_len, &latest_weather) &&
-            event->data_len <= (int)sizeof latest_payload) {
-            ESP_LOGI(TAG, "weather: temp=%d C, humidity=%u%%",
-                     latest_weather.temp_c, latest_weather.humidity_pct);
-            memcpy(latest_payload, event->data, event->data_len);
-            latest_payload_len = event->data_len;
+        // TODO per-topic data handling
+        {
+            wb::weather_t weather;
+            const auto *data = reinterpret_cast<const uint8_t *>(event->data);
+            if (event->data_len <= WB_MAX_PAYLOAD_LEN &&
+                wb::decode_weather(data, event->data_len, &weather)) {
+                ESP_LOGI(TAG, "weather: temp=%d C, humidity=%u%%",
+                         weather.temp_c, weather.humidity_pct);
+                taskENTER_CRITICAL(&weather_lock);
+                memcpy(latest_payload, data, event->data_len);
+                latest_len = event->data_len;
+                taskEXIT_CRITICAL(&weather_lock);
+                esp_event_post(BRIDGE_MQTT_EVENTS, WEATHER_RECEIVED_EVENT,
+                               nullptr, 0, 0);
+            }
         }
         break;
     case MQTT_EVENT_ERROR:
@@ -104,11 +117,38 @@ esp_err_t WeatherMQTT::init() {
     return ESP_OK;
 }
 
-size_t WeatherMQTT::get_latest_payload(uint8_t *out, size_t len) {
-    if (latest_payload_len == 0 || latest_payload_len > len) {
-        return 0;
+esp_err_t get_latest_weather(wb::weather_t *out) {
+    if (out == nullptr) {
+        return ESP_ERR_INVALID_ARG;
     }
 
-    memcpy(out, latest_payload, latest_payload_len);
-    return latest_payload_len;
+    uint8_t buf[WB_MAX_PAYLOAD_LEN];
+    uint8_t len;
+    esp_err_t ret = get_latest_weather_payload(buf, sizeof buf, &len);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+
+    return wb::decode_weather(buf, len, out) ? ESP_OK : ESP_ERR_INVALID_STATE;
+}
+
+esp_err_t get_latest_weather_payload(uint8_t *buf, uint8_t cap, uint8_t *len) {
+    if (buf == nullptr || len == nullptr) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    esp_err_t err = ESP_OK;
+
+    taskENTER_CRITICAL(&weather_lock);
+    if (latest_len == 0) {
+        err = ESP_ERR_NOT_FOUND;
+    } else if (cap < latest_len) {
+        err = ESP_ERR_INVALID_SIZE;
+    } else {
+        memcpy(buf, latest_payload, latest_len);
+        *len = latest_len;
+    }
+    taskEXIT_CRITICAL(&weather_lock);
+
+    return err;
 }

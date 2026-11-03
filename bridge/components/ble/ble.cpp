@@ -2,10 +2,12 @@
 #include "esp_event.h"
 #include "esp_hosted_bt_host_stack.h"
 #include "esp_log.h"
+#include "freertos/idf_additions.h"
 #include "host/ble_hs.h"
 #include "host/util/util.h"
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
+#include "portmacro.h"
 #include "services/gap/ble_svc_gap.h"
 
 #include "esp_central.h"
@@ -16,9 +18,10 @@
 #include <cstring>
 
 static constexpr char TAG[] = "BLE";
+
 namespace {
 
-static int blecent_gap_event(struct ble_gap_event *event, void *arg);
+int blecent_gap_event(struct ble_gap_event *event, void *arg);
 
 ble_uuid128_t to_ble_uuid(wb::uuid128_t uuid) {
     ble_uuid128_t out{};
@@ -33,7 +36,9 @@ const ble_uuid128_t remote_chr_uuid =
     to_ble_uuid(wb::weather_payload_uuid_le());
 const ble_uuid16_t cccd_uuid = BLE_UUID16_INIT(BLE_GATT_DSC_CLT_CFG_UUID16);
 
-WeatherMQTT *weather_source = nullptr;
+uint16_t weather_conn = BLE_HS_CONN_HANDLE_NONE;
+uint16_t weather_val_handle = 0;
+ble_npl_event weather_ev;
 
 int blecent_should_connect(const struct ble_gap_disc_desc *disc) {
     struct ble_hs_adv_fields fields;
@@ -172,19 +177,12 @@ err:
     return ble_gap_terminate(peer->conn_handle, BLE_ERR_REM_USER_CONN_TERM);
 }
 
-int blecent_on_mtu(uint16_t conn_handle, const struct ble_gatt_error *error,
-                   uint16_t mtu, void *arg) {
-    uint16_t val_handle = (uint16_t)(uintptr_t)arg;
+int send_weather(uint16_t conn_handle, uint16_t val_handle) {
     uint8_t payload[WB_MAX_PAYLOAD_LEN];
-    size_t len;
+    uint8_t len;
     int rc;
 
-    MODLOG_DFLT(INFO,
-                "MTU exchange complete; status=%d conn_handle=%d mtu=%d\n",
-                error->status, conn_handle, mtu);
-
-    len = weather_source->get_latest_payload(payload, sizeof payload);
-    if (len == 0) {
+    if (get_latest_weather_payload(payload, sizeof payload, &len) != ESP_OK) {
         MODLOG_DFLT(WARN, "No weather payload to send yet\n");
         return 0;
     }
@@ -203,6 +201,27 @@ int blecent_on_mtu(uint16_t conn_handle, const struct ble_gatt_error *error,
     }
 
     return 0;
+}
+
+int blecent_on_mtu(uint16_t conn_handle, const struct ble_gatt_error *error,
+                   uint16_t mtu, void *arg) {
+    MODLOG_DFLT(INFO,
+                "MTU exchange complete; status=%d conn_handle=%d mtu=%d\n",
+                error->status, conn_handle, mtu);
+
+    weather_conn = conn_handle;
+    weather_val_handle = (uint16_t)(uintptr_t)arg;
+    return send_weather(weather_conn, weather_val_handle);
+}
+
+void on_weather_host(struct ble_npl_event *ev) {
+    if (weather_conn != BLE_HS_CONN_HANDLE_NONE) {
+        send_weather(weather_conn, weather_val_handle);
+    }
+}
+
+void on_weather(void *arg, esp_event_base_t base, int32_t id, void *data) {
+    ble_npl_eventq_put(nimble_port_get_dflt_eventq(), &weather_ev);
 }
 
 /**
@@ -440,6 +459,7 @@ int blecent_gap_event(struct ble_gap_event *event, void *arg) {
 
         /* Forget about peer. */
         peer_delete(event->disconnect.conn.conn_handle);
+        weather_conn = BLE_HS_CONN_HANDLE_NONE;
 
         /* Resume scanning. */
         blecent_scan();
@@ -572,10 +592,17 @@ BLE::BLE() : bt_config{} {
     };
 }
 
-BLE::~BLE() {}
+BLE::~BLE() {
+    esp_event_handler_instance_unregister(BRIDGE_MQTT_EVENTS,
+                                          WEATHER_RECEIVED_EVENT, evt_handler);
+}
 
-esp_err_t BLE::init(WeatherMQTT *weather) {
-    weather_source = weather;
+esp_err_t BLE::init(void) {
+    ble_npl_event_init(&weather_ev, on_weather_host, nullptr);
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(
+        BRIDGE_MQTT_EVENTS, WEATHER_RECEIVED_EVENT, on_weather, nullptr,
+        &evt_handler));
+
     ESP_ERROR_CHECK(esp_hosted_bt_host_stack_setup(&bt_config));
     ESP_ERROR_CHECK(nimble_port_init());
     ble_hs_cfg.sync_cb = bridge_ble_on_sync;
