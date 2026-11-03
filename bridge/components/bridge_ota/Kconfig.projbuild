@@ -1,0 +1,17 @@
+menu "Bridge OTA"
+
+config BRIDGE_OTA_URL
+    string "Firmware image URL"
+    default "http://pi5.local:8080/firmware.bin"
+
+config BRIDGE_OTA_POLL_S
+    int "Seconds between update checks"
+    default 300
+    range 10 86400
+
+config BRIDGE_OTA_FIRST_CHECK_S
+    int "Delay before the first check after boot"
+    default 30
+    range 0 3600
+
+endmenu
