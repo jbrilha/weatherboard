@@ -365,14 +365,13 @@ system_status_t system_init(void) {
              ok_str(status.nvs_ok), ok_str(status.netif_ok),
              ok_str(status.event_loop_ok), ok_str(status.mdns_ok));
     if (status.nvs_erased) {
-        ESP_LOGW(TAG, "nvs was erased this boot, provisioning state is gone");
+        ESP_LOGW(TAG, "nvs was erased this boot");
     }
     if (status.coredump_present) {
         ESP_LOGE(TAG, "a core dump is waiting to be reported and erased");
     }
     if (status.safe_mode) {
-        ESP_LOGE(TAG, "SAFE MODE: protocols and peripherals stay down, only "
-                      "the ota path comes up");
+        ESP_LOGE(TAG, "SAFE MODE: only eth and OTA");
     }
     if (system_is_degraded()) {
         ESP_LOGE(TAG, "node is running DEGRADED");
