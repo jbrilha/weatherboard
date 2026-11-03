@@ -44,3 +44,5 @@ void system_ota_start(void);
 
 uint32_t system_boot_attempts(void);
 void system_mark_clean_run(void);
+
+void system_crash_now(void);

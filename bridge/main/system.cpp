@@ -392,8 +392,7 @@ bool system_is_degraded(void) {
 void system_ota_start(void) { bridge_ota_init(); }
 
 void system_enter_safe_mode(void) {
-    ESP_LOGE(TAG, "safe mode: boot attempt %" PRIu32 ", bringing up one link",
-             system_boot_attempts());
+    ESP_LOGE(TAG, "safe mode: boot attempt %" PRIu32, system_boot_attempts());
 
     bridge_ota_init();
 
@@ -402,4 +401,11 @@ void system_enter_safe_mode(void) {
         ESP_LOGW(TAG, "safe mode: %s, waiting for an ota update",
                  bridge_ota_state_str(bridge_ota_get_state()));
     }
+}
+
+void system_crash_now(void) {
+    ESP_LOGE(TAG, "byebye");
+    vTaskDelay(pdMS_TO_TICKS(200));
+    volatile uint32_t *wild = (volatile uint32_t *)0;
+    *wild = 0xDEADBEEF;
 }
