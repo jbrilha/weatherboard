@@ -598,7 +598,6 @@ BLE::~BLE() {
 }
 
 esp_err_t BLE::init(void) {
-    ble_npl_event_init(&weather_ev, on_weather_host, nullptr);
     ESP_ERROR_CHECK(esp_event_handler_instance_register(
         BRIDGE_MQTT_EVENTS, WEATHER_RECEIVED_EVENT, on_weather, nullptr,
         &evt_handler));
@@ -618,5 +617,8 @@ esp_err_t BLE::init(void) {
     assert(m == 0);
 
     nimble_port_freertos_init(bridge_ble_host_task);
+
+    ble_npl_event_init(&weather_ev, on_weather_host, nullptr);
+
     return ESP_OK;
 }
