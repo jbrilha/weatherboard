@@ -1,3 +1,4 @@
+#include "audio.hpp"
 #include "esp_err.h"
 #include "ethernet.hpp"
 #include "freertos/FreeRTOS.h"
@@ -32,7 +33,11 @@ extern "C" void app_main(void) {
     static BLE ble = BLE();
     ble.init();
 
-    static LVGLPort lvgl_port = LVGLPort();
+    static I2C i2c = I2C();
+    i2c.init();
+
+    static Audio audio = Audio(i2c);
+    static LVGLPort lvgl_port = LVGLPort(i2c);
     if (lvgl_port.init() == ESP_OK) {
         auto brightness_func = [](uint8_t v) { lvgl_port.set_brightness(v); };
         ui::demo::callbacks demo_cbs = {
@@ -44,5 +49,11 @@ extern "C" void app_main(void) {
         ui::demo::set_callbacks(demo_cbs);
         ui::demo::show();
         lv_unlock();
+    }
+
+    if (audio.init() == ESP_OK) {
+        audio.play_music();
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        audio.stop_music();
     }
 }
