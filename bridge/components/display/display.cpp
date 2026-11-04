@@ -10,6 +10,7 @@
 #include "esp_ldo_regulator.h"
 #include "esp_log.h"
 #include "hal/lcd_types.h"
+#include "i2c.hpp"
 #include "soc/clk_tree_defs.h"
 #include "soc/gpio_num.h"
 
@@ -33,15 +34,13 @@ static constexpr uint32_t MIPI_DSI_PHY_PWR_LDO_VOLTAGE_MV = 2500;
 
 static constexpr uint32_t GT911_ADDR = 0x5D;
 static constexpr uint32_t GT911_CLK_HZ = 100000;
-static constexpr uint32_t PIN_NUM_TOUCH_SDA = 7;
-static constexpr uint32_t PIN_NUM_TOUCH_SCL = 8;
 static constexpr uint32_t BACKLIGHT_I2C_ADDR = 0x45;
 static constexpr uint32_t BACKLIGHT_I2C_REG = 0x96;
 
-Display::Display()
-    : mipi_dsi_bus(nullptr), mipi_dbi_io(nullptr), panel_handle(nullptr),
-      vendor_config{}, touch_handle(nullptr), backlight_cfg{},
-      backlight_dev(nullptr), i2c_bus(nullptr), tp_io(nullptr),
+Display::Display(I2C &i2c)
+    : i2c(i2c), mipi_dsi_bus(nullptr), mipi_dbi_io(nullptr),
+      panel_handle(nullptr), vendor_config{}, touch_handle(nullptr),
+      backlight_cfg{}, backlight_dev(nullptr), tp_io(nullptr),
       ldo_mipi_phy(nullptr) {
     bus_config = {
         .bus_id = 0,
@@ -145,9 +144,6 @@ Display::~Display() {
     if (backlight_dev != nullptr) {
         i2c_master_bus_rm_device(backlight_dev);
     }
-    if (i2c_bus != nullptr) {
-        i2c_del_master_bus(i2c_bus);
-    }
     if (panel_handle != nullptr) {
         esp_lcd_panel_del(panel_handle);
     }
@@ -163,23 +159,6 @@ Display::~Display() {
 }
 
 esp_err_t Display::init(void) {
-    // TODO move these to I2C component
-    i2c_master_bus_config_t bus_cfg = {
-        .i2c_port = I2C_NUM_1,
-        .sda_io_num = (gpio_num_t)PIN_NUM_TOUCH_SDA,
-        .scl_io_num = (gpio_num_t)PIN_NUM_TOUCH_SCL,
-        .clk_source = I2C_CLK_SRC_DEFAULT,
-        .glitch_ignore_cnt = 7,
-        .intr_priority = 0,
-        .trans_queue_depth = 0,
-        .flags =
-            {
-                .enable_internal_pullup = true,
-                .allow_pd = false,
-            },
-    };
-    ESP_ERROR_CHECK(i2c_new_master_bus(&bus_cfg, &i2c_bus));
-
     ESP_ERROR_CHECK(init_panel());
     ESP_ERROR_CHECK(init_touch());
 
@@ -219,15 +198,13 @@ esp_err_t Display::init_panel(void) {
 }
 
 esp_err_t Display::init_touch(void) {
-    ESP_ERROR_CHECK(
-        i2c_master_bus_add_device(i2c_bus, &backlight_cfg, &backlight_dev));
+    ESP_ERROR_CHECK(i2c.add_device(&backlight_cfg, &backlight_dev));
 
-    if (i2c_master_probe(i2c_bus, ESP_LCD_TOUCH_IO_I2C_GT911_ADDRESS, 50) !=
-        ESP_OK) {
+    if (i2c.probe_addr(ESP_LCD_TOUCH_IO_I2C_GT911_ADDRESS, 50) != ESP_OK) {
         io_cfg.dev_addr = ESP_LCD_TOUCH_IO_I2C_GT911_ADDRESS_BACKUP;
     }
     ESP_LOGI(TAG, "Touch controller at 0x%02X", (unsigned)io_cfg.dev_addr);
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(i2c_bus, &io_cfg, &tp_io));
+    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(i2c.get_bus(), &io_cfg, &tp_io));
 
     ESP_ERROR_CHECK(
         esp_lcd_touch_new_i2c_gt911(tp_io, &touch_config, &touch_handle));

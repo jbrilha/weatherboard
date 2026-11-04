@@ -20,8 +20,8 @@ static constexpr uint32_t LVGL_TASK_PRIORITY = 2;
 static constexpr uint32_t LVGL_TASK_MAX_DELAY_MS = 500;
 static constexpr uint32_t LVGL_TASK_MIN_DELAY_MS = (1000 / CONFIG_FREERTOS_HZ);
 
-LVGLPort::LVGLPort()
-    : lv_display(nullptr), lv_touch(nullptr), lv_cursor(nullptr),
+LVGLPort::LVGLPort(I2C &i2c)
+    : display(i2c), lv_display(nullptr), lv_touch(nullptr), lv_cursor(nullptr),
       tick_timer(nullptr), lv_task(nullptr), buf1(nullptr), buf2(nullptr) {}
 
 LVGLPort::~LVGLPort() {

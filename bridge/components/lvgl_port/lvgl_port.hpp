@@ -9,7 +9,7 @@
 
 class LVGLPort {
   public:
-    LVGLPort();
+    LVGLPort(I2C &i2c);
     ~LVGLPort();
 
     esp_err_t init(void);

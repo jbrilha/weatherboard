@@ -7,13 +7,14 @@
 #include "esp_lcd_touch.h"
 #include "esp_lcd_types.h"
 #include "esp_ldo_regulator.h"
+#include "i2c.hpp"
 
 constexpr uint32_t MIPI_DSI_LCD_H_RES = 800;
 constexpr uint32_t MIPI_DSI_LCD_V_RES = 1280;
 
 class Display {
   public:
-    Display();
+    Display(I2C &i2c);
     ~Display();
 
     esp_err_t init(void);
@@ -24,6 +25,8 @@ class Display {
     void set_brightness(uint8_t level);
 
   private:
+    I2C &i2c;
+
     esp_lcd_dsi_bus_handle_t mipi_dsi_bus;
     esp_lcd_dsi_bus_config_t bus_config;
 
@@ -43,7 +46,6 @@ class Display {
     i2c_device_config_t backlight_cfg;
     i2c_master_dev_handle_t backlight_dev;
 
-    i2c_master_bus_handle_t i2c_bus;
     esp_lcd_panel_io_handle_t tp_io;
     esp_ldo_channel_handle_t ldo_mipi_phy;
 
