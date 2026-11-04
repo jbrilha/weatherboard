@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use askama::Template;
 use axum::{Json, Router, extract::State, http::StatusCode, response::Html, routing::get};
-use tower_http::services::ServeDir;
+use tower_http::services::{ServeDir, ServeFile};
 
 use crate::weather::{self, Ip, openweathermap::Forecast1Day, service::WeatherService};
 
@@ -23,8 +23,12 @@ struct WeatherTemplate {
 }
 
 pub fn router() -> Router<Arc<WeatherService>> {
+    let state_dir =
+        std::env::var("STATE_DIRECTORY").unwrap_or_else(|_| env!("CARGO_MANIFEST_DIR").into());
+
     Router::new()
         .route("/", get(index))
+        .nest_service("/firmware", ServeDir::new(format!("{state_dir}/firmware")))
         .route("/fragments/weather", get(weather_fragment))
         .route("/weather", get(weather_json))
         .nest_service(

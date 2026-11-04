@@ -35,3 +35,14 @@ build-hub:
 
 build:
     cargo build --workspace
+
+rpi_repo := "weatherboard"
+remote := "pi5.local"
+
+remote-update:
+    ssh -t {{remote}} \
+        'cd {{rpi_repo}} \
+        && git pull \
+        && cargo build --release \
+        && sudo systemctl restart weather-server.service \
+        && sudo systemctl restart weather-hub.service'

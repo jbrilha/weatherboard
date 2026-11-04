@@ -7,6 +7,10 @@ members = [
     "ui",
     "sim",
 ]
+default-members = [
+    "server",
+    "hub",
+]
 exclude = ["firmware", "ffi"]
 
 [workspace.dependencies]

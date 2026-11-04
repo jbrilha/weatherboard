@@ -1,0 +1,17 @@
+[Unit]
+Description=Weather Server
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=pi
+WorkingDirectory=@REPO@
+ExecStart=@REPO@/target/release/server
+EnvironmentFile=@REPO@/.env
+Environment=RUST_LOG=info
+Restart=always
+RestartSec=5
+StateDirectory=weatherboard
+
+[Install]
+WantedBy=multi-user.target

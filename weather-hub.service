@@ -1,0 +1,15 @@
+[Unit]
+Description=Weather Hub
+Wants=weather-server.service bluetooth.service
+After=weather-server.service bluetooth.service
+
+[Service]
+User=pi
+WorkingDirectory=@REPO@
+ExecStart=@REPO@/target/release/hub
+Environment=RUST_LOG=info
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

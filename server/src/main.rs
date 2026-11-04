@@ -12,7 +12,7 @@ use weather::service::WeatherService;
 
 use crate::{ipc::IpcService, mqtt::MqttService};
 
-const HOST: &str = "127.0.0.1";
+const HOST: &str = "0.0.0.0";
 const PORT: &str = "3030";
 
 #[tokio::main]
