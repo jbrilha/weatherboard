@@ -12,7 +12,7 @@
 
 class Audio {
   public:
-    Audio(I2C &i2c);
+    Audio(I2C &i2c, uint8_t volume = VOLUME);
     ~Audio();
 
     esp_err_t init(void);
@@ -28,6 +28,8 @@ class Audio {
     void stop_echo(void);
 
   private:
+    static constexpr uint8_t VOLUME = 50;
+
     I2C &i2c;
     bool initialized;
 

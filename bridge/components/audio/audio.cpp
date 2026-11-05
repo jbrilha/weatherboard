@@ -26,14 +26,13 @@ static constexpr gpio_num_t BSP_I2S_DSIN = GPIO_NUM_11;
 static constexpr gpio_num_t PA_PIN = GPIO_NUM_53;
 
 static constexpr float INPUT_GAIN = 24.0;
-static constexpr uint8_t VOLUME = 100;
 static constexpr uint32_t SAMPLE_RATE = 16000;
 
-Audio::Audio(I2C &i2c)
+Audio::Audio(I2C &i2c, uint8_t volume)
     : i2c(i2c), speaker(nullptr), speaker_in_use(false), microphone(nullptr),
       microphone_in_use(false), i2s_data_if(nullptr), i2s_tx_chan(nullptr),
-      i2s_rx_chan(nullptr), volume(VOLUME), sample_rate(SAMPLE_RATE),
-      music_task(nullptr), echo_task(nullptr) {}
+      i2s_rx_chan(nullptr), volume(volume), sample_rate(SAMPLE_RATE),
+      music_task(nullptr), echo_task(nullptr), beep_task(nullptr) {}
 
 Audio::~Audio() {
     esp_codec_dev_close(speaker);
@@ -41,7 +40,7 @@ Audio::~Audio() {
 }
 
 esp_err_t Audio::init(void) {
-    ESP_ERROR_CHECK(i2s_init());
+    ESP_RETURN_ON_ERROR(i2s_init(), TAG, "init I2S failed");
     assert(i2s_data_if);
 
     speaker = speaker_codec_init();
@@ -132,7 +131,8 @@ esp_err_t Audio::i2s_init(void) {
     i2s_chan_config_t chan_cfg =
         I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_1, I2S_ROLE_MASTER);
     chan_cfg.auto_clear = true;
-    ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, &i2s_tx_chan, &i2s_rx_chan));
+    ESP_RETURN_ON_ERROR(i2s_new_channel(&chan_cfg, &i2s_tx_chan, &i2s_rx_chan),
+                        TAG, "create I2S channels failed");
 
     const i2s_std_config_t i2s_std_cfg = {
         .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(sample_rate),
@@ -154,13 +154,17 @@ esp_err_t Audio::i2s_init(void) {
             },
     };
     if (i2s_tx_chan != nullptr) {
-        ESP_ERROR_CHECK(i2s_channel_init_std_mode(i2s_tx_chan, &i2s_std_cfg));
-        ESP_ERROR_CHECK(i2s_channel_enable(i2s_tx_chan));
+        ESP_RETURN_ON_ERROR(i2s_channel_init_std_mode(i2s_tx_chan, &i2s_std_cfg),
+                            TAG, "init I2S TX std mode failed");
+        ESP_RETURN_ON_ERROR(i2s_channel_enable(i2s_tx_chan), TAG,
+                            "enable I2S TX channel failed");
     }
 
     if (i2s_rx_chan != nullptr) {
-        ESP_ERROR_CHECK(i2s_channel_init_std_mode(i2s_rx_chan, &i2s_std_cfg));
-        ESP_ERROR_CHECK(i2s_channel_enable(i2s_rx_chan));
+        ESP_RETURN_ON_ERROR(i2s_channel_init_std_mode(i2s_rx_chan, &i2s_std_cfg),
+                            TAG, "init I2S RX std mode failed");
+        ESP_RETURN_ON_ERROR(i2s_channel_enable(i2s_rx_chan), TAG,
+                            "enable I2S RX channel failed");
     }
 
     audio_codec_i2s_cfg_t i2s_cfg = {

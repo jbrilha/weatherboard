@@ -1,4 +1,5 @@
 #include "ble.hpp"
+#include "esp_check.h"
 #include "esp_event.h"
 #include "esp_hosted_bt_host_stack.h"
 #include "esp_log.h"
@@ -598,12 +599,14 @@ BLE::~BLE() {
 }
 
 esp_err_t BLE::init(void) {
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(
-        BRIDGE_MQTT_EVENTS, WEATHER_RECEIVED_EVENT, on_weather, nullptr,
-        &evt_handler));
+    ESP_RETURN_ON_ERROR(esp_event_handler_instance_register(
+                            BRIDGE_MQTT_EVENTS, WEATHER_RECEIVED_EVENT,
+                            on_weather, nullptr, &evt_handler),
+                        TAG, "register weather event handler failed");
 
-    ESP_ERROR_CHECK(esp_hosted_bt_host_stack_setup(&bt_config));
-    ESP_ERROR_CHECK(nimble_port_init());
+    ESP_RETURN_ON_ERROR(esp_hosted_bt_host_stack_setup(&bt_config), TAG,
+                        "setup hosted BT host stack failed");
+    ESP_RETURN_ON_ERROR(nimble_port_init(), TAG, "init nimble port failed");
     ble_hs_cfg.sync_cb = bridge_ble_on_sync;
     ble_hs_cfg.reset_cb = bridge_ble_on_reset;
 

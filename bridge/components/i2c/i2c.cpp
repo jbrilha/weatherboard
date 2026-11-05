@@ -1,4 +1,5 @@
 #include "i2c.hpp"
+#include "esp_check.h"
 #include "esp_log.h"
 #include "soc/gpio_num.h"
 
@@ -36,7 +37,8 @@ I2C::~I2C() {
 }
 
 esp_err_t I2C::init(void) {
-    ESP_ERROR_CHECK(i2c_new_master_bus(&bus_cfg, &i2c_bus));
+    ESP_RETURN_ON_ERROR(i2c_new_master_bus(&bus_cfg, &i2c_bus), TAG,
+                        "create master bus failed");
     return ESP_OK;
 }
 

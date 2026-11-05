@@ -1,4 +1,5 @@
 #include "weather_mqtt.hpp"
+#include "esp_check.h"
 #include "esp_err.h"
 #include "esp_event.h"
 #include "esp_event_base.h"
@@ -108,11 +109,14 @@ WeatherMQTT::WeatherMQTT() : client_config{}, client_handle(nullptr) {
 WeatherMQTT::~WeatherMQTT() {}
 
 esp_err_t WeatherMQTT::init() {
-    ESP_ERROR_CHECK(esp_mqtt_client_register_event(
-        client_handle, static_cast<esp_mqtt_event_id_t>(ESP_EVENT_ANY_ID),
-        mqtt_event_handler, nullptr));
+    ESP_RETURN_ON_ERROR(
+        esp_mqtt_client_register_event(
+            client_handle, static_cast<esp_mqtt_event_id_t>(ESP_EVENT_ANY_ID),
+            mqtt_event_handler, nullptr),
+        TAG, "register MQTT event handler failed");
 
-    ESP_ERROR_CHECK(esp_mqtt_client_start(client_handle));
+    ESP_RETURN_ON_ERROR(esp_mqtt_client_start(client_handle), TAG,
+                        "start MQTT client failed");
 
     return ESP_OK;
 }

@@ -1,5 +1,6 @@
 #include "display.hpp"
 #include "driver/i2c_master.h"
+#include "esp_check.h"
 #include "esp_err.h"
 #include "esp_lcd_jd9365_10_1.h"
 #include "esp_lcd_mipi_dsi.h"
@@ -159,8 +160,8 @@ Display::~Display() {
 }
 
 esp_err_t Display::init(void) {
-    ESP_ERROR_CHECK(init_panel());
-    ESP_ERROR_CHECK(init_touch());
+    ESP_RETURN_ON_ERROR(init_panel(), TAG, "init panel failed");
+    ESP_RETURN_ON_ERROR(init_touch(), TAG, "init touch failed");
 
     return ESP_OK;
 }
@@ -180,34 +181,44 @@ void Display::enable_dsi_phy_power(void) {
 esp_err_t Display::init_panel(void) {
     enable_dsi_phy_power();
 
-    ESP_ERROR_CHECK(esp_lcd_new_dsi_bus(&bus_config, &mipi_dsi_bus));
+    ESP_RETURN_ON_ERROR(esp_lcd_new_dsi_bus(&bus_config, &mipi_dsi_bus), TAG,
+                        "create DSI bus failed");
 
     vendor_config.mipi_config.dsi_bus = mipi_dsi_bus;
 
-    ESP_ERROR_CHECK(
-        esp_lcd_new_panel_io_dbi(mipi_dsi_bus, &dbi_config, &mipi_dbi_io));
-    ESP_ERROR_CHECK(
-        esp_lcd_new_panel_jd9365(mipi_dbi_io, &lcd_dev_config, &panel_handle));
+    ESP_RETURN_ON_ERROR(
+        esp_lcd_new_panel_io_dbi(mipi_dsi_bus, &dbi_config, &mipi_dbi_io), TAG,
+        "create DBI panel IO failed");
+    ESP_RETURN_ON_ERROR(
+        esp_lcd_new_panel_jd9365(mipi_dbi_io, &lcd_dev_config, &panel_handle),
+        TAG, "create JD9365 panel failed");
 
-    ESP_ERROR_CHECK(esp_lcd_dpi_panel_enable_dma2d(panel_handle));
+    ESP_RETURN_ON_ERROR(esp_lcd_dpi_panel_enable_dma2d(panel_handle), TAG,
+                        "enable DMA2D failed");
 
-    ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
-    ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_reset(panel_handle), TAG,
+                        "reset panel failed");
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_init(panel_handle), TAG,
+                        "init panel failed");
 
     return ESP_OK;
 }
 
 esp_err_t Display::init_touch(void) {
-    ESP_ERROR_CHECK(i2c.add_device(&backlight_cfg, &backlight_dev));
+    ESP_RETURN_ON_ERROR(i2c.add_device(&backlight_cfg, &backlight_dev), TAG,
+                        "add backlight device failed");
 
     if (i2c.probe_addr(ESP_LCD_TOUCH_IO_I2C_GT911_ADDRESS, 50) != ESP_OK) {
         io_cfg.dev_addr = ESP_LCD_TOUCH_IO_I2C_GT911_ADDRESS_BACKUP;
     }
     ESP_LOGI(TAG, "Touch controller at 0x%02X", (unsigned)io_cfg.dev_addr);
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(i2c.get_bus(), &io_cfg, &tp_io));
+    ESP_RETURN_ON_ERROR(
+        esp_lcd_new_panel_io_i2c(i2c.get_bus(), &io_cfg, &tp_io), TAG,
+        "create touch panel IO failed");
 
-    ESP_ERROR_CHECK(
-        esp_lcd_touch_new_i2c_gt911(tp_io, &touch_config, &touch_handle));
+    ESP_RETURN_ON_ERROR(
+        esp_lcd_touch_new_i2c_gt911(tp_io, &touch_config, &touch_handle), TAG,
+        "create GT911 touch failed");
 
     return ESP_OK;
 }

@@ -1,5 +1,6 @@
 #include "lvgl_port.hpp"
 #include "display.hpp"
+#include "esp_check.h"
 #include "esp_err.h"
 #include "esp_heap_caps.h"
 #include "esp_lcd_panel_ops.h"
@@ -107,7 +108,7 @@ static void lvgl_port_task(void *arg) {
 
 esp_err_t LVGLPort::init() {
 
-    ESP_ERROR_CHECK(display.init());
+    ESP_RETURN_ON_ERROR(display.init(), TAG, "init display failed");
     esp_lcd_panel_handle_t panel = display.get_panel_handle();
 
     lv_init();
@@ -133,8 +134,9 @@ esp_err_t LVGLPort::init() {
 
     esp_lcd_dpi_panel_event_callbacks_t cbs = {};
     cbs.on_color_trans_done = notify_lvgl_flush_ready;
-    ESP_ERROR_CHECK(
-        esp_lcd_dpi_panel_register_event_callbacks(panel, &cbs, lv_display));
+    ESP_RETURN_ON_ERROR(
+        esp_lcd_dpi_panel_register_event_callbacks(panel, &cbs, lv_display),
+        TAG, "register DPI panel callbacks failed");
 
     ESP_LOGI(TAG, "Use esp_timer as LVGL tick timer");
     const esp_timer_create_args_t lvgl_tick_timer_args = {
@@ -144,9 +146,11 @@ esp_err_t LVGLPort::init() {
         .name = "lvgl_tick",
         .skip_unhandled_events = false,
     };
-    ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &tick_timer));
-    ESP_ERROR_CHECK(
-        esp_timer_start_periodic(tick_timer, LVGL_TICK_PERIOD_MS * 1000));
+    ESP_RETURN_ON_ERROR(esp_timer_create(&lvgl_tick_timer_args, &tick_timer),
+                        TAG, "create LVGL tick timer failed");
+    ESP_RETURN_ON_ERROR(
+        esp_timer_start_periodic(tick_timer, LVGL_TICK_PERIOD_MS * 1000), TAG,
+        "start LVGL tick timer failed");
 
     lv_touch = lv_indev_create();
     lv_indev_set_type(lv_touch, LV_INDEV_TYPE_POINTER);

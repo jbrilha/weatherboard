@@ -1,4 +1,5 @@
 #include "ethernet.hpp"
+#include "esp_check.h"
 #include "esp_eth_driver.h"
 #include "esp_eth_phy_ip101.h"
 #include "esp_event.h"
@@ -85,16 +86,20 @@ esp_err_t Ethernet::init(void) {
     esp_netif_config_t cfg = ESP_NETIF_DEFAULT_ETH();
     this->netif = esp_netif_new(&cfg);
     this->netif_glue = esp_eth_new_netif_glue(this->handle);
-    ESP_ERROR_CHECK(esp_netif_attach(this->netif, this->netif_glue));
+    ESP_RETURN_ON_ERROR(esp_netif_attach(this->netif, this->netif_glue), TAG,
+                        "attach netif failed");
 
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(
-        ETH_EVENT, ESP_EVENT_ANY_ID, &eth_event_handler, nullptr,
-        &eth_evt_inst));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(
-        IP_EVENT, IP_EVENT_ETH_GOT_IP, &got_ip_event_handler, nullptr,
-        &ip_evt_inst));
+    ESP_RETURN_ON_ERROR(esp_event_handler_instance_register(
+                            ETH_EVENT, ESP_EVENT_ANY_ID, &eth_event_handler,
+                            nullptr, &eth_evt_inst),
+                        TAG, "register ETH event handler failed");
+    ESP_RETURN_ON_ERROR(esp_event_handler_instance_register(
+                            IP_EVENT, IP_EVENT_ETH_GOT_IP,
+                            &got_ip_event_handler, nullptr, &ip_evt_inst),
+                        TAG, "register IP event handler failed");
 
-    ESP_ERROR_CHECK(esp_eth_start(this->handle));
+    ESP_RETURN_ON_ERROR(esp_eth_start(this->handle), TAG,
+                        "start ethernet failed");
 
     return ESP_OK;
 }
