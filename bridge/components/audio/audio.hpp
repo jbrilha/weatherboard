@@ -27,6 +27,9 @@ class Audio {
     esp_err_t play_echo(void);
     void stop_echo(void);
 
+    void queue_beep(void);
+    esp_err_t beep(uint32_t freq_hz = 1000, uint32_t duration_ms = 100);
+
   private:
     static constexpr uint8_t VOLUME = 50;
 
@@ -56,6 +59,9 @@ class Audio {
 
     TaskHandle_t echo_task;
     static void i2s_echo(void *args);
+
+    TaskHandle_t beep_task;
+    static void beep_loop(void *args);
 
     es8311_codec_cfg_t get_es8311_cfg(esp_codec_dec_work_mode_t codec_mode);
 };

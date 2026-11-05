@@ -51,6 +51,9 @@ esp_err_t Audio::init(void) {
     ESP_RETURN_ON_ERROR(open_with_format(sample_rate, 16, I2S_SLOT_MODE_STEREO),
                         TAG, "open codecs with format failed");
     ESP_RETURN_ON_ERROR(set_volume(volume), TAG, "set codec volume failed");
+    ESP_RETURN_ON_FALSE(
+        xTaskCreate(beep_loop, "beep", 3072, this, 5, &beep_task) == pdTRUE,
+        ESP_ERR_NO_MEM, TAG, "create beep task failed");
     return ESP_OK;
 }
 
@@ -154,15 +157,17 @@ esp_err_t Audio::i2s_init(void) {
             },
     };
     if (i2s_tx_chan != nullptr) {
-        ESP_RETURN_ON_ERROR(i2s_channel_init_std_mode(i2s_tx_chan, &i2s_std_cfg),
-                            TAG, "init I2S TX std mode failed");
+        ESP_RETURN_ON_ERROR(
+            i2s_channel_init_std_mode(i2s_tx_chan, &i2s_std_cfg), TAG,
+            "init I2S TX std mode failed");
         ESP_RETURN_ON_ERROR(i2s_channel_enable(i2s_tx_chan), TAG,
                             "enable I2S TX channel failed");
     }
 
     if (i2s_rx_chan != nullptr) {
-        ESP_RETURN_ON_ERROR(i2s_channel_init_std_mode(i2s_rx_chan, &i2s_std_cfg),
-                            TAG, "init I2S RX std mode failed");
+        ESP_RETURN_ON_ERROR(
+            i2s_channel_init_std_mode(i2s_rx_chan, &i2s_std_cfg), TAG,
+            "init I2S RX std mode failed");
         ESP_RETURN_ON_ERROR(i2s_channel_enable(i2s_rx_chan), TAG,
                             "enable I2S RX channel failed");
     }
@@ -315,3 +320,38 @@ esp_err_t Audio::play_echo(void) {
 }
 
 void Audio::stop_echo(void) { vTaskDelete(echo_task); }
+
+esp_err_t Audio::beep(uint32_t freq_hz, uint32_t duration_ms) {
+    ESP_RETURN_ON_FALSE(speaker_in_use, ESP_ERR_INVALID_STATE, TAG,
+                        "speaker is not open");
+
+    int16_t buf[128];
+    const uint32_t half_period = sample_rate / freq_hz / 2;
+    const uint32_t frames = sample_rate * duration_ms / 1000;
+
+    for (uint32_t f = 0; f < frames; f += 64) {
+        for (uint32_t i = 0; i < 64; i++) {
+            int16_t s = ((f + i) / half_period) % 2 ? 8000 : -8000;
+            buf[2 * i] = s;
+            buf[(2 * i) + 1] = s;
+        }
+        ESP_RETURN_ON_ERROR(esp_codec_dev_write(speaker, buf, sizeof(buf)), TAG,
+                            "beep write failed");
+    }
+    return ESP_OK;
+}
+
+void Audio::beep_loop(void *args) {
+    Audio *audio = static_cast<Audio *>(args);
+
+    while (true) {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        audio->beep();
+    }
+}
+
+void Audio::queue_beep(void) {
+    if (beep_task != nullptr) {
+        xTaskNotifyGive(beep_task);
+    }
+}
