@@ -1,4 +1,4 @@
 dependencies:
   nimble_central_utils:
     path: nimble_central_utils
-  espressif/esp_hosted: "*"
+  espressif/esp_hosted: "^3.1.0"
